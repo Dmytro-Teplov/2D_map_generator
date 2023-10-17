@@ -174,7 +174,8 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        glUniform4f(location, c, c, c, 1.0f);
+        glUniform4f(location, c, c, 1.0f, 1.0f);
+
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         

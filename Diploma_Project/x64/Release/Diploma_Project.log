@@ -1,0 +1,38 @@
+﻿  App.cpp
+App.obj : error LNK2001: unresolved external symbol glfwSwapBuffers
+App.obj : error LNK2001: unresolved external symbol __imp___glewEnableVertexAttribArray
+App.obj : error LNK2001: unresolved external symbol __imp___glewUseProgram
+App.obj : error LNK2001: unresolved external symbol __imp___glewVertexAttribPointer
+App.obj : error LNK2001: unresolved external symbol glfwSwapInterval
+App.obj : error LNK2001: unresolved external symbol __imp_glClear
+App.obj : error LNK2001: unresolved external symbol "bool __cdecl ImGui_ImplGlfw_InitForOpenGL(struct GLFWwindow *,bool)" (?ImGui_ImplGlfw_InitForOpenGL@@YA_NPEAUGLFWwindow@@_N@Z)
+App.obj : error LNK2001: unresolved external symbol __imp___glewGetShaderiv
+App.obj : error LNK2001: unresolved external symbol __imp___glewCompileShader
+App.obj : error LNK2001: unresolved external symbol __imp___glewCreateShader
+App.obj : error LNK2001: unresolved external symbol __imp___glewBindBuffer
+App.obj : error LNK2001: unresolved external symbol __imp___glewCreateProgram
+App.obj : error LNK2001: unresolved external symbol __imp___glewGetShaderInfoLog
+App.obj : error LNK2001: unresolved external symbol __imp___glewValidateProgram
+App.obj : error LNK2001: unresolved external symbol glfwTerminate
+App.obj : error LNK2001: unresolved external symbol glfwPollEvents
+App.obj : error LNK2001: unresolved external symbol glfwInit
+App.obj : error LNK2001: unresolved external symbol glfwCreateWindow
+App.obj : error LNK2001: unresolved external symbol __imp___glewGetUniformLocation
+App.obj : error LNK2001: unresolved external symbol "bool __cdecl ImGui_ImplOpenGL3_Init(char const *)" (?ImGui_ImplOpenGL3_Init@@YA_NPEBD@Z)
+App.obj : error LNK2001: unresolved external symbol glfwMakeContextCurrent
+App.obj : error LNK2001: unresolved external symbol __imp___glewBufferData
+App.obj : error LNK2001: unresolved external symbol __imp___glewAttachShader
+App.obj : error LNK2001: unresolved external symbol __imp___glewDeleteProgram
+App.obj : error LNK2001: unresolved external symbol __imp___glewShaderSource
+App.obj : error LNK2001: unresolved external symbol __imp_glDrawElements
+App.obj : error LNK2001: unresolved external symbol __imp___glewGenBuffers
+App.obj : error LNK2001: unresolved external symbol __imp___glewDeleteShader
+App.obj : error LNK2001: unresolved external symbol __imp___glewLinkProgram
+App.obj : error LNK2001: unresolved external symbol glfwWindowShouldClose
+App.obj : error LNK2001: unresolved external symbol __imp___glewUniform4f
+App.obj : error LNK2001: unresolved external symbol __imp_glewInit
+App.obj : error LNK2001: unresolved external symbol "struct ImGuiIO & __cdecl ImGui::GetIO(void)" (?GetIO@ImGui@@YAAEAUImGuiIO@@XZ)
+App.obj : error LNK2001: unresolved external symbol "bool __cdecl ImGui::DebugCheckVersionAndDataLayout(char const *,unsigned __int64,unsigned __int64,unsigned __int64,unsigned __int64,unsigned __int64,unsigned __int64)" (?DebugCheckVersionAndDataLayout@ImGui@@YA_NPEBD_K11111@Z)
+App.obj : error LNK2001: unresolved external symbol "void __cdecl ImGui::StyleColorsDark(struct ImGuiStyle *)" (?StyleColorsDark@ImGui@@YAXPEAUImGuiStyle@@@Z)
+App.obj : error LNK2001: unresolved external symbol "struct ImGuiContext * __cdecl ImGui::CreateContext(struct ImFontAtlas *)" (?CreateContext@ImGui@@YAPEAUImGuiContext@@PEAUImFontAtlas@@@Z)
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\DIPLOMA\Diploma_Project\x64\Release\Diploma_Project.exe : fatal error LNK1120: 36 unresolved externals

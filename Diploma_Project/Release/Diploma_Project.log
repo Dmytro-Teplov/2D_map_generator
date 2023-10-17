@@ -1,0 +1,9 @@
+﻿  App.cpp
+LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+App.obj : error LNK2001: unresolved external symbol "bool __cdecl ImGui_ImplGlfw_InitForOpenGL(struct GLFWwindow *,bool)" (?ImGui_ImplGlfw_InitForOpenGL@@YA_NPAUGLFWwindow@@_N@Z)
+App.obj : error LNK2001: unresolved external symbol "bool __cdecl ImGui_ImplOpenGL3_Init(char const *)" (?ImGui_ImplOpenGL3_Init@@YA_NPBD@Z)
+App.obj : error LNK2001: unresolved external symbol "struct ImGuiIO & __cdecl ImGui::GetIO(void)" (?GetIO@ImGui@@YAAAUImGuiIO@@XZ)
+App.obj : error LNK2001: unresolved external symbol "bool __cdecl ImGui::DebugCheckVersionAndDataLayout(char const *,unsigned int,unsigned int,unsigned int,unsigned int,unsigned int,unsigned int)" (?DebugCheckVersionAndDataLayout@ImGui@@YA_NPBDIIIIII@Z)
+App.obj : error LNK2001: unresolved external symbol "void __cdecl ImGui::StyleColorsDark(struct ImGuiStyle *)" (?StyleColorsDark@ImGui@@YAXPAUImGuiStyle@@@Z)
+App.obj : error LNK2001: unresolved external symbol "struct ImGuiContext * __cdecl ImGui::CreateContext(struct ImFontAtlas *)" (?CreateContext@ImGui@@YAPAUImGuiContext@@PAUImFontAtlas@@@Z)
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\DIPLOMA\Diploma_Project\Release\Diploma_Project.exe : fatal error LNK1120: 6 unresolved externals
