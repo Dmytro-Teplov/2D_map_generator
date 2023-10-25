@@ -1,2 +1,9 @@
 ﻿  App.cpp
-  Diploma_Project.vcxproj -> C:\Users\Dmytro Tpl\Desktop\Homework_Univ\DIPLOMA\Diploma_Project\Debug\Diploma_Project.exe
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Diploma_Project\src\App.cpp(213,22): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Diploma_Project\src\App.cpp(214,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Diploma_Project\src\App.cpp(219,22): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Diploma_Project\src\App.cpp(221,27): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Diploma_Project\src\App.cpp(223,67): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Diploma_Project\src\App.cpp(224,79): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
+C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Diploma_Project\src\App.cpp(276,43): warning C4244: 'argument': conversion from 'float' to 'GLsizei', possible loss of data
+  Diploma_Project.vcxproj -> C:\Users\Dmytro Tpl\Desktop\Homework_Univ\diploma2\Debug\Diploma_Project.exe
