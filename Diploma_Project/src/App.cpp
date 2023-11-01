@@ -68,7 +68,7 @@ int main(void)
 
     ShaderProgramSource sources;
 
-    sources = ParseShader("res/shaders/RedTris.shader");
+    sources = ParseShader("res/shaders/Terrain.shader");
 
     unsigned int shader = CreateShader(sources.vertexShader, sources.fragmentShader);
 
@@ -91,12 +91,7 @@ int main(void)
     glm::mat4 projection = glm::mat4(1.0f);
     projection = glm::ortho(-2.0f, +2.0f, -1.5f, +1.5f, 0.1f, 100.0f);
     assets[0].updMat(projection, "projection");
-    //Quad house(shader, positions2, indices, "res/assets/Map.png");
-    //house.initialize();
-    //
-
-
-
+ 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
