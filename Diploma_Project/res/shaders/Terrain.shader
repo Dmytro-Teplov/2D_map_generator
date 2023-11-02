@@ -28,6 +28,8 @@ out vec4 color;
 uniform sampler2D texture1;
 
 uniform vec4 u_Color;
+uniform float u_BgRes;
+
 
 #ifdef GL_ES
 precision mediump float;
@@ -134,7 +136,7 @@ float fBm(vec2 p)
 {
     float f = 0.0;
     float w = 0.5;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 6; i++)
     {
         f += w * perlin_noise(p);
         p *= 2.0;
@@ -145,14 +147,40 @@ float fBm(vec2 p)
 
 
 void main()
-{
+{   
+    //get the blend mask
     vec4 proxy = texture2D(texture1, texcoord);
-    color = vec4(vec3(fBm(texcoord * u_Color.x)) + 0.5f, 1.f) * proxy.z;
-    if (color.z < 0.4)
-        color = vec4(0.1, 0.8, 1.0, 1.0) * (color.z+0.2);
-    else if(color.z > 0.4 && color.z < 0.42)
-        color = vec4(1.0, 0.8, 0.4, 1.0) * (color.z + 0.2);
-    else if (color.z > 0.42)
-        color = vec4(0.3, 0.7, 0.2, 1.0) * (color.z + 0.2);
+    
+    //get the noise
+    vec4 water_noise = vec4(vec3(fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_Color.x)) + 0.5f, 1.f) * proxy.z;
+    float terrain_noise_small = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * 4.0) ;//figure out why whole noise is less than 0.5
+    float terrain_noise_big = fBm(vec2(texcoord.x * u_BgRes, texcoord.y));
+    float terrain_noise_small2 = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * 2.0);
+    
+    //initialize the water and terrain mask
+    float terrain_mask = clamp((abs(terrain_noise_small - 0.5) + terrain_noise_big) / 2 + 0.5, 0.5, 1.0) * (1 - proxy.z);
+    float water_mask = clamp((terrain_noise_small + terrain_noise_big*4)/10, 0.0, 0.5) * proxy.z;
+    terrain_mask = clamp(terrain_mask + water_mask, 0.0, 1.0);
+
+    //blend water and terrain
+    if (terrain_mask < 0.45)//water
+        color = mix(vec4(0.2, 0.5, 0.5, 1.0), vec4(0.9, 0.8, 0.7, 1.0), terrain_mask/0.45 );
+    if (terrain_mask >= 0.45)//send shore
+        color = mix(vec4(0.9, 0.8, 0.7, 1.0), vec4(0.7, 0.6, 0.5, 1.0), (terrain_mask - 0.45) / 0.15);
+    if (terrain_mask > 0.6)//terrain
+        color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (terrain_mask - 0.6) / 0.35);
+    if (terrain_mask > 0.95)//rocky mountains
+        color = vec4(0.9, 0.9, 0.9, 1.0);
+    
+    //foam
+    if (terrain_mask > 0.25 && terrain_mask < 0.3 && (terrain_noise_big > 0.05 || terrain_noise_small > 0.15))
+        color =  vec4(0.9, 0.9, 0.9, 1.0);
+    
+
+    //paths
+    if (proxy.g>0.01)
+        color = mix(color, vec4(0.7, 0.6, 0.5, 1.0), proxy.g);
+   
+    
 
 };

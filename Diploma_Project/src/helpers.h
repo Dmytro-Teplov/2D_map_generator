@@ -65,6 +65,7 @@ struct Quad
     void changeColor(float col);
     void changeSize(float canvas_ratio, bool w_ratio);
     void updMat(glm::mat4 matrix, const char* matrix_name);
+    void updFloat(float num, const char* name);
     void debug();
     void draw();
 

@@ -75,7 +75,7 @@ int main(void)
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
     Quad assets[128];
-    Quad background(shader, positions, 5, 5, indices, "res/assets/Proxy_map.png");
+    Quad background(shader, positions, 5, 5, indices, "res/assets/Proxy_map_3.png");
     assets[0] = background;
     assets[0].initialize();
     assets[0].debug();
@@ -92,6 +92,9 @@ int main(void)
     projection = glm::ortho(-2.0f, +2.0f, -1.5f, +1.5f, 0.1f, 100.0f);
     assets[0].updMat(projection, "projection");
  
+
+    float res = (float)canvas_width / canvas_height;
+    assets[0].updFloat(res, "u_BgRes");
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -119,6 +122,8 @@ int main(void)
         windowResizeHandler(w_width, w_height);
         projection = glm::scale(glm::ortho(-(float)w_width , (float)w_width , -(float)w_height , (float)w_height , 0.1f, 100.0f), glm::vec3(zoom, zoom, zoom));
         assets[0].updMat(projection, "projection");
+        
+
 
         assets[0].draw();
         //house.draw();
@@ -136,8 +141,12 @@ int main(void)
             std::cout << canvas_width << " " << canvas_height << std::endl;
             model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
             assets[0].updMat(model, "model");
+            res = (float)canvas_width / canvas_height;
+            assets[0].updFloat(res, "u_BgRes");
+            //std::cout << canvas_width << " " << canvas_height << std::endl;
+            
         }
-        ImGui::InputFloat("Zoom", &zoom);
+        ImGui::SliderFloat("Zoom", &zoom,0.f,25.f);
         ImGui::End();
 
         ImGui::Render();

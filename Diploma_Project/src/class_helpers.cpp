@@ -27,6 +27,7 @@ void Quad::initialize()
     unsigned char* imageData = stbi_load(texture_path, &width, &height, &channels, 4);
     if (imageData == nullptr) {
         std::cout << "fuck";
+        std::cout << stbi_failure_reason();
         stbi_image_free(imageData);
     }
     unsigned int texture;
@@ -90,6 +91,11 @@ void Quad::updMat(glm::mat4 matrix, const char* matrix_name)
     int location = glGetUniformLocation(shader, matrix_name);
 
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+void Quad::updFloat(float num, const char* name)
+{
+    int location = glGetUniformLocation(shader, name);
+    glUniform1f(location, num);
 }
 void Quad::debug()
 {
