@@ -1,12 +1,53 @@
-#include "helpers.h"
+#define STB_IMAGE_IMPLEMENTATION
+
+#include "class_helpers.h"
+#include <stb_image.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+#include "GL_helpers.h"
+
+#define ASSERT(x) if(!(x)) __debugbreak();
+#define GLCall(x) GLClearError();\
+    x;\
+    ASSERT(GLLogCall(#x,__FILE__,__LINE__))
+static void GLClearError()
+{
+    while (glGetError() != GL_NO_ERROR);
+}
+static bool GLLogCall(const char* function, const char* file, int line)
+{
+    while (GLenum error = glGetError())
+    {
+        std::cout << error << " " << function << " " << file << " " << line << std::endl;
+        return false;
+    }
+    return true;
+}
+
+
 
 
 void Quad::initialize()
 {
-    unsigned int buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, std::size(vertices) * sizeof(float), vertices, GL_STATIC_DRAW);
+
+    
+    unsigned int vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+   
+    VertexBuffer vb(vertices, std::size(vertices) * sizeof(float));
+
+    std::cout << glGetError();
+    /*unsigned int vertBuff;
+    glGenBuffers(1, &vertBuff);
+    glBindBuffer(GL_ARRAY_BUFFER, vertBuff);
+    glBufferData(GL_ARRAY_BUFFER, std::size(vertices) * sizeof(float),vertices,  GL_STATIC_DRAW);*/
+    //glEnableVertexAttribArray(0);
+    std::cout << glGetError();
+    //GLCall(glVertexAttribPointer(0, 5, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0));
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * position_stride, (void*)0);
@@ -14,10 +55,12 @@ void Quad::initialize()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * uv_stride, (void*)(sizeof(float) * position_stride - sizeof(float) * 2));//2 is the amount of uv coordinates
 
-    unsigned int indBuffer;
+    IndexBuffer ib(indices, std::size(indices));
+
+    /*unsigned int indBuffer;
     glGenBuffers(1, &indBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std::size(indices) * sizeof(unsigned int), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std::size(indices) * sizeof(unsigned int), indices, GL_STATIC_DRAW);*/
 
 
 
@@ -26,22 +69,25 @@ void Quad::initialize()
     int width, height;
     unsigned char* imageData = stbi_load(texture_path, &width, &height, &channels, 4);
     if (imageData == nullptr) {
-        std::cout << "fuck";
         std::cout << stbi_failure_reason();
         stbi_image_free(imageData);
     }
     unsigned int texture;
     glGenTextures(1, &texture);
     glActiveTexture(GL_TEXTURE0);
+
     // Bind the texture object
     glBindTexture(GL_TEXTURE_2D, texture);
+
     // Upload the image data to the texture object
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
     std::cout << width << " " << height << " " << channels << " " << glGetError();
+
     // Specify the texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     std::cout << glGetError();
+
     // Unbind the texture object
     //glBindTexture(GL_TEXTURE_2D, 0);
 

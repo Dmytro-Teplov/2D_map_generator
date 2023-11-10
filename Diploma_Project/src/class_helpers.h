@@ -1,10 +1,4 @@
 #pragma once
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
-#include <stb_image.h>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
@@ -13,19 +7,10 @@
 #include <string>
 #include <filesystem>
 
-struct ShaderProgramSource
-{
-    std::string vertexShader;
-    std::string fragmentShader;
-};
 
-ShaderProgramSource ParseShader(const std::string& source);
 
-unsigned int CompileShader(unsigned int type, const std::string& source);
 
-unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
-
-struct Quad
+class Quad
 {
     //data to draw a quad
     unsigned int shader;
@@ -40,11 +25,14 @@ struct Quad
     int text_loc;
     int size_loc;
     int proj_loc;
-
     //functions
+public:
     Quad()
     {
         shader = -1;
+        for (int i = 0; i < 20; i++) {
+            vertices[i] = 0.f;
+        }
     }
     Quad(unsigned int shader_, float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_)
     {
@@ -71,3 +59,4 @@ struct Quad
 
 
 };
+

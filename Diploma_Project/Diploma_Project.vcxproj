@@ -27,9 +27,8 @@
     <ClCompile Include="res\imgui\imgui_tables.cpp" />
     <ClCompile Include="res\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\App.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\shaders\RedTris.shader" />
+    <ClCompile Include="src\class_helpers.cpp" />
+    <ClCompile Include="src\GL_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="res\imgui\backends\imgui_impl_glfw.h" />
@@ -41,6 +40,8 @@
     <ClInclude Include="res\imgui\imstb_rectpack.h" />
     <ClInclude Include="res\imgui\imstb_textedit.h" />
     <ClInclude Include="res\imgui\imstb_truetype.h" />
+    <ClInclude Include="src\GL_helpers.h" />
+    <ClInclude Include="src\class_helpers.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -106,7 +107,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\GLEW\lib\Release\Win32;$(SolutionDir)Dependencies\GLFW\lib-vc2022</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\GLEW\lib\Release\Win32;$(SolutionDir)Dependencies\GLFW\lib-vc2022;$(SolutionDir)Diploma_Project\src</AdditionalLibraryDirectories>
       <AdditionalDependencies>glew32s.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

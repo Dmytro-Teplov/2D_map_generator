@@ -1,4 +1,23 @@
-#include "helpers.h"
+#include "GL_helpers.h"
+#include <GL/glew.h>
+
+#define ASSERT(x) if(!(x)) __debugbreak();
+#define GLCall(x) GLClearError();\
+    x;\
+    ASSERT(GLLogCall(#x,__FILE__,__LINE__))
+static void GLClearError()
+{
+    while (glGetError() != GL_NO_ERROR);
+}
+static bool GLLogCall(const char* function, const char* file, int line)
+{
+    while (GLenum error = glGetError())
+    {
+        std::cout << error << " " << function << " " << file << " " << line << std::endl;
+        return false;
+    }
+    return true;
+}
 
 ShaderProgramSource ParseShader(const std::string& source)
 {
@@ -75,4 +94,66 @@ unsigned int CreateShader(const std::string& vertexShader, const std::string& fr
     glDeleteShader(fs);
 
     return program;
+}
+
+
+void VertexBuffer::Release()
+{
+    glDeleteBuffers(1, &v_bufferID);
+    v_bufferID = 0;
+}
+
+
+
+VertexBuffer::VertexBuffer(const void* data, unsigned int size) noexcept
+{
+    GLCall(glGenBuffers(1, &v_bufferID));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, v_bufferID));
+    GLCall(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+}
+
+VertexBuffer::VertexBuffer() 
+{
+    v_bufferID = 0;
+}
+
+
+
+void VertexBuffer::Bind() const
+{
+    glBindBuffer(GL_ARRAY_BUFFER, v_bufferID);
+}
+
+void VertexBuffer::Unbind() const
+{
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
+    :indCount(count)
+{
+    glGenBuffers(1, &i_bufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, i_bufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count*sizeof(unsigned int), data, GL_STATIC_DRAW);
+}
+IndexBuffer::IndexBuffer()
+{
+    i_bufferID = 0;
+}
+
+
+void IndexBuffer::Release()
+{
+    glDeleteBuffers(1, &i_bufferID);
+    i_bufferID = 0;
+}
+
+void IndexBuffer::Bind() const
+{
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, i_bufferID);
+}
+
+void IndexBuffer::Unbind() const
+{
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

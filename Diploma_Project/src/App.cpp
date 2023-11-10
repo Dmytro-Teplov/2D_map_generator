@@ -1,12 +1,22 @@
-#define STB_IMAGE_IMPLEMENTATION
 
-#include "helpers.h"
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <fstream>
+#include <filesystem>
+#include <iostream>
+#include "class_helpers.h"
+#include "GL_helpers.h"
+#include <stb_image.h>
+
 //#include "shader_helpers.cpp"
 
 float zoom = 1.0f;
 static bool mousePressed = false;
 static double lastX = 0.0, lastY = 0.0;
-
+bool mouse_pressed = false;
 void windowResizeHandler(int window_width, int window_height) {
     glViewport(0, 0, window_width, window_height);
 }
@@ -19,7 +29,22 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     if (zoom > 25.0f)
         zoom = 25.0f;
 }
-
+void mouse_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        double x;
+        double y;
+        glfwGetCursorPos(window, &x, &y);
+        mouse_pressed = true;
+        std::cout << x << " " << y << std::endl;
+    }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+    {
+        mouse_pressed = false;
+    }
+    
+}
 int main(void)
 {
     GLFWwindow* window;
@@ -27,6 +52,11 @@ int main(void)
     /* Initialize the library */
     if (!glfwInit())
         return -1;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     /* Create a windowed mode window and its OpenGL context */
     int w_width, w_height;
     float canvas_aspect_ratio = 1.0;
@@ -45,8 +75,9 @@ int main(void)
     glfwSwapInterval(1);
     if (glewInit() != GLEW_OK)
         std::cout << "Error";
-
+    glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_callback);
     //glm::mat4 view = glm::mat4(1.0f);
     //// note that we’re translating the scene in the reverse direction
     //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
@@ -74,27 +105,28 @@ int main(void)
 
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
-    Quad assets[128];
-    Quad background(shader, positions, 5, 5, indices, "res/assets/Proxy_map_3.png");
-    assets[0] = background;
-    assets[0].initialize();
-    assets[0].debug();
+    
+    //Quad assets[128];
+    Quad background(shader, positions, 5, 5, indices, "res/assets/Proxy_map_2.png");
+    
+    background.initialize();
+    background.debug();
 
 
     glm::mat4 model = glm::scale(glm::mat4(1.0f),glm::vec3(200.0f,100.0f,1.0f));
-    assets[0].updMat(model, "model");
+    background.updMat(model, "model");
 
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    assets[0].updMat(view, "view");
+    background.updMat(view, "view");
 
     glm::mat4 projection = glm::mat4(1.0f);
     projection = glm::ortho(-2.0f, +2.0f, -1.5f, +1.5f, 0.1f, 100.0f);
-    assets[0].updMat(projection, "projection");
+    background.updMat(projection, "projection");
  
 
     float res = (float)canvas_width / canvas_height;
-    assets[0].updFloat(res, "u_BgRes");
+    background.updFloat(res, "u_BgRes");
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -115,17 +147,19 @@ int main(void)
         ImGui::NewFrame();
 
 
-        assets[0].changeColor(c);
+        background.changeColor(c);
 
         glfwGetWindowSize(window, &w_width, &w_height);
 
         windowResizeHandler(w_width, w_height);
         projection = glm::scale(glm::ortho(-(float)w_width , (float)w_width , -(float)w_height , (float)w_height , 0.1f, 100.0f), glm::vec3(zoom, zoom, zoom));
-        assets[0].updMat(projection, "projection");
+        background.updMat(projection, "projection");
         
 
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        
 
-        assets[0].draw();
+        background.draw();
         //house.draw();
 
         ImGui::Begin("Quests");
@@ -140,15 +174,15 @@ int main(void)
             std::cout << w_width << " " << w_height << std::endl;
             std::cout << canvas_width << " " << canvas_height << std::endl;
             model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
-            assets[0].updMat(model, "model");
+            background.updMat(model, "model");
             res = (float)canvas_width / canvas_height;
-            assets[0].updFloat(res, "u_BgRes");
+            background.updFloat(res, "u_BgRes");
             //std::cout << canvas_width << " " << canvas_height << std::endl;
             
         }
         ImGui::SliderFloat("Zoom", &zoom,0.f,25.f);
         ImGui::End();
-
+        
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
