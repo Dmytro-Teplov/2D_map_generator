@@ -26,13 +26,13 @@ private:
 	void Release();
 
 public:
-	
 	VertexBuffer(const void* data, unsigned int size) noexcept;
 	VertexBuffer();
-	//~VertexBuffer() { Release(); };
+	~VertexBuffer() { Release(); };
 
-	void Bind() const;
-	void Unbind() const;
+	void initialize(const void* data, unsigned int size);
+	void bind() const;
+	void unbind() const;
 };
 
 class IndexBuffer
@@ -42,13 +42,13 @@ private:
 	unsigned int indCount = 0;
 	void Release();
 public:
-	
 	IndexBuffer(const unsigned int* data, unsigned int count);
 	IndexBuffer();
-	//~IndexBuffer() { Release(); };
+	~IndexBuffer() { Release(); };
 
-	void Bind() const;
-	void Unbind() const;
+	void initialize(const unsigned int* data, unsigned int count);
+	void bind() const;
+	void unbind() const;
 
-	inline unsigned int GetCount() const { return indCount; }
+	inline unsigned int getCount() const { return indCount; }
 };

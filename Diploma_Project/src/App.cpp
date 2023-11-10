@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <iostream>
 #include "class_helpers.h"
-#include "GL_helpers.h"
 #include <stb_image.h>
 
 //#include "shader_helpers.cpp"

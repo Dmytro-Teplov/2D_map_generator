@@ -103,8 +103,6 @@ void VertexBuffer::Release()
     v_bufferID = 0;
 }
 
-
-
 VertexBuffer::VertexBuffer(const void* data, unsigned int size) noexcept
 {
     GLCall(glGenBuffers(1, &v_bufferID));
@@ -117,14 +115,19 @@ VertexBuffer::VertexBuffer()
     v_bufferID = 0;
 }
 
+void VertexBuffer::initialize(const void* data, unsigned int size)
+{
+    GLCall(glGenBuffers(1, &v_bufferID));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, v_bufferID));
+    GLCall(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+}
 
-
-void VertexBuffer::Bind() const
+void VertexBuffer::bind() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, v_bufferID);
 }
 
-void VertexBuffer::Unbind() const
+void VertexBuffer::unbind() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
@@ -148,12 +151,19 @@ void IndexBuffer::Release()
     i_bufferID = 0;
 }
 
-void IndexBuffer::Bind() const
+void IndexBuffer::initialize(const unsigned int* data, unsigned int count)
+{
+    glGenBuffers(1, &i_bufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, i_bufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(unsigned int), data, GL_STATIC_DRAW);
+}
+
+void IndexBuffer::bind() const
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, i_bufferID);
 }
 
-void IndexBuffer::Unbind() const
+void IndexBuffer::unbind() const
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

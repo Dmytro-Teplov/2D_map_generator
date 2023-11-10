@@ -27,9 +27,30 @@ static bool GLLogCall(const char* function, const char* file, int line)
     return true;
 }
 
+Quad::Quad()
+{
+    shader = -1;
+    for (int i = 0; i < 20; i++) {
+        vertices[i] = 0.f;
+    }
+}
 
 
+Quad::Quad(unsigned int shader_, float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_)
+{
+    shader = shader_;
+    for (int i = 0; i < 20; i++) {
+        vertices[i] = vertices_[i];
+        if (i < 6)
+        {
+            indices[i] = indices_[i];
+        }
+    }
+    position_stride = pos_stride_;
+    uv_stride = uv_stride_;
+    texture_path = texture_path_;
 
+}
 void Quad::initialize()
 {
 
@@ -38,7 +59,7 @@ void Quad::initialize()
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
    
-    VertexBuffer vb(vertices, std::size(vertices) * sizeof(float));
+    vb.initialize(vertices, std::size(vertices) * sizeof(float));
 
     std::cout << glGetError();
     /*unsigned int vertBuff;
@@ -55,7 +76,7 @@ void Quad::initialize()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * uv_stride, (void*)(sizeof(float) * position_stride - sizeof(float) * 2));//2 is the amount of uv coordinates
 
-    IndexBuffer ib(indices, std::size(indices));
+    ib.initialize(indices, std::size(indices));
 
     /*unsigned int indBuffer;
     glGenBuffers(1, &indBuffer);

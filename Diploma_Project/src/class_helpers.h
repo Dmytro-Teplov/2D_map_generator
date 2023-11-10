@@ -6,7 +6,7 @@
 #include <fstream>
 #include <string>
 #include <filesystem>
-
+#include "GL_helpers.h"
 
 
 
@@ -19,6 +19,8 @@ class Quad
     int uv_stride;
     unsigned int indices[6];
     const char* texture_path;
+    VertexBuffer vb;
+    IndexBuffer ib;
 
     //uniform locations, potentially not needed
     int color_loc;
@@ -27,28 +29,8 @@ class Quad
     int proj_loc;
     //functions
 public:
-    Quad()
-    {
-        shader = -1;
-        for (int i = 0; i < 20; i++) {
-            vertices[i] = 0.f;
-        }
-    }
-    Quad(unsigned int shader_, float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_)
-    {
-        shader = shader_;
-        for (int i = 0; i < 20; i++) {
-            vertices[i] = vertices_[i];
-            if (i < 6)
-            {
-                indices[i] = indices_[i];
-            }
-        }
-        position_stride = pos_stride_;
-        uv_stride = uv_stride_;
-        texture_path = texture_path_;
-
-    }
+    Quad();
+    Quad(unsigned int shader_, float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_);
     void initialize();
     void changeColor(float col);
     void changeSize(float canvas_ratio, bool w_ratio);
