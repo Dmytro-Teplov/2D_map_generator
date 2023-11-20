@@ -2,8 +2,6 @@
 
 #include "class_helpers.h"
 #include <stb_image.h>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
@@ -29,16 +27,12 @@ static bool GLLogCall(const char* function, const char* file, int line)
 
 Quad::Quad()
 {
-    shader = -1;
     for (int i = 0; i < 20; i++) {
         vertices[i] = 0.f;
     }
 }
-
-
-Quad::Quad(unsigned int shader_, float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_)
+Quad::Quad(float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_)
 {
-    shader = shader_;
     for (int i = 0; i < 20; i++) {
         vertices[i] = vertices_[i];
         if (i < 6)
@@ -55,21 +49,16 @@ void Quad::initialize()
 {
 
     
-    unsigned int vao;
+    //unsigned int vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
    
     vb.initialize(vertices, std::size(vertices) * sizeof(float));
 
     std::cout << glGetError();
-    /*unsigned int vertBuff;
-    glGenBuffers(1, &vertBuff);
-    glBindBuffer(GL_ARRAY_BUFFER, vertBuff);
-    glBufferData(GL_ARRAY_BUFFER, std::size(vertices) * sizeof(float),vertices,  GL_STATIC_DRAW);*/
-    //glEnableVertexAttribArray(0);
+    
     std::cout << glGetError();
-    //GLCall(glVertexAttribPointer(0, 5, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0));
-
+    
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * position_stride, (void*)0);
 
@@ -77,12 +66,6 @@ void Quad::initialize()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * uv_stride, (void*)(sizeof(float) * position_stride - sizeof(float) * 2));//2 is the amount of uv coordinates
 
     ib.initialize(indices, std::size(indices));
-
-    /*unsigned int indBuffer;
-    glGenBuffers(1, &indBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, std::size(indices) * sizeof(unsigned int), indices, GL_STATIC_DRAW);*/
-
 
 
     // Load the image data
@@ -93,7 +76,7 @@ void Quad::initialize()
         std::cout << stbi_failure_reason();
         stbi_image_free(imageData);
     }
-    unsigned int texture;
+    //unsigned int texture;
     glGenTextures(1, &texture);
     glActiveTexture(GL_TEXTURE0);
 
@@ -107,31 +90,14 @@ void Quad::initialize()
     // Specify the texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
     std::cout << glGetError();
 
     // Unbind the texture object
     //glBindTexture(GL_TEXTURE_2D, 0);
 
-    glUseProgram(shader);
-    std::cout << glGetError();
-
-
-    int location = glGetUniformLocation(shader, "u_Color");
-    int textLoc = glGetUniformLocation(shader, "texture1");
-    int szLoc = glGetUniformLocation(shader, "size");
-    std::cout << glGetError();
-    //ASSERT(location != 1);
-    glUniform4f(location, 0.5f, 0.0f, 0.5f, 1.0f);
-    glUniform1i(textLoc, 0);
-    float col = 0.0f;
-    color_loc = location;
-    text_loc = textLoc;
-    size_loc = szLoc;
-
-}
-void Quad::changeColor(float col)
-{
-    glUniform4f(color_loc, col, col, col, 1.0f);
+    //glUseProgram(shader);
+    //std::cout << glGetError();
 }
 void Quad::changeSize(float canvas_ratio, bool w_ratio)
 {
@@ -153,17 +119,6 @@ void Quad::changeSize(float canvas_ratio, bool w_ratio)
         std::cout << vertices[i] << " " << vertices[i + 1] << std::endl;
     }
 }
-void Quad::updMat(glm::mat4 matrix, const char* matrix_name)
-{
-    int location = glGetUniformLocation(shader, matrix_name);
-
-    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
-}
-void Quad::updFloat(float num, const char* name)
-{
-    int location = glGetUniformLocation(shader, name);
-    glUniform1f(location, num);
-}
 void Quad::debug()
 {
     std::cout << vertices[0] << " " << vertices[7] << std::endl;
@@ -172,5 +127,30 @@ void Quad::debug()
 }
 void Quad::draw()
 {
+    vb.bind();
+    glBindVertexArray(vao);
+    ib.bind();
+    glBindTexture(GL_TEXTURE_2D, texture);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+}
+
+StateHandler::StateHandler()
+{
+}
+void StateHandler::attachShader(unsigned int shader_)
+{
+    shader = shader_;
+    glUseProgram(shader);
+    std::cout << glGetError();
+}
+void StateHandler::updMat(glm::mat4 matrix, const char* matrix_name)
+{
+    int location = glGetUniformLocation(shader, matrix_name);
+
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+void StateHandler::updFloat(float num, const char* name)
+{
+    int location = glGetUniformLocation(shader, name);
+    glUniform1f(location, num);
 }

@@ -176,11 +176,13 @@ void main()
     if (terrain_mask > 0.25 && terrain_mask < 0.3 && (terrain_noise_big > 0.05 || terrain_noise_small > 0.15))
         color =  vec4(0.9, 0.9, 0.9, 1.0);
     
+    
 
     //paths
     if (proxy.g>0.01)
         color = mix(color, vec4(0.7, 0.6, 0.5, 1.0), proxy.g);
-   
+    
+    ;
     
 
 };
