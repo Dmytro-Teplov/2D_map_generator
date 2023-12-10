@@ -1,4 +1,5 @@
 #pragma once
+#include <imgui.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
@@ -9,6 +10,8 @@
 #include <string>
 #include <filesystem>
 #include "GL_helpers.h"
+
+
 
 class StateHandler
 {
@@ -61,3 +64,15 @@ public:
 
 };
 
+class UiHandler
+{
+    int i = 0;
+    bool leftPanelOpen = true;
+    float sliderPosX = 0;
+    float sliderPosY = 0;
+    float sliderWidth = 100;
+public:
+    void renderUI(StateHandler& state, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void setCustomStyle();
+    void setCustomFont(const char regular[], const char bold[]);
+};

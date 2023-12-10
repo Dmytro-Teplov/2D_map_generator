@@ -12,6 +12,17 @@
 
 StateHandler state;
 
+//void setCustomFont() 
+//{
+//    ImGuiIO& io = ImGui::GetIO();
+//
+//    // Load a custom font
+//    io.Fonts->AddFontFromFileTTF("res/fonts/AtkinsonHyperlegible-Regular.ttf", 20.0f);
+//
+//    // Set the font for the current session
+//    io.FontDefault = io.Fonts->Fonts.back();
+//}
+
 void windowResizeHandler(int window_width, int window_height) {
     glViewport(0, 0, window_width, window_height);
 }
@@ -147,6 +158,10 @@ int main(void)
     double x = 0;
     double y = 0;
 
+
+    UiHandler ui;
+    ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
+    ui.setCustomStyle();
     while (!glfwWindowShouldClose(window))
     {
         /* Render here */
@@ -164,9 +179,12 @@ int main(void)
         if (state.mouse_pressed)
         {
             glfwGetCursorPos(window, &x, &y);
-            state.transform = glm::vec3(2) * glm::vec3((x - state.last_x)/ state.zoom, -(y - state.last_y) / state.zoom, 0.0f);
-            glm::mat4 view_relative = glm::translate(state.view,state.transform);
-            state.updMat(view_relative, "view");
+            if (x > w_width / 6.0) 
+            {
+                state.transform = glm::vec3(2) * glm::vec3((x - state.last_x) / state.zoom, -(y - state.last_y) / state.zoom, 0.0f);
+                glm::mat4 view_relative = glm::translate(state.view, state.transform);
+                state.updMat(view_relative, "view");
+            }
             //house.draw();
 
         }
@@ -174,30 +192,9 @@ int main(void)
         background.draw();
         house.draw();
         quad3.draw();
-
-        ImGui::Begin("Quests");
-        ImGui::Text("Hello there adventurer! ");
-        ImGui::SliderFloat("Color", &c, 0.0f, 100.0f);
-        ImGui::SliderFloat("Size", &sz, 0.0f, 200.0f);
-
-        ImGui::InputInt("canvas width", &canvas_width);
-        ImGui::InputInt("canvas height", &canvas_height);
-        if (ImGui::Button("Change the size"))
-        {
-            std::cout << w_width << " " << w_height << std::endl;
-            std::cout << canvas_width << " " << canvas_height << std::endl;
-            state.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
-            state.updMat(state.model, "model");
-            res = (float)canvas_width / canvas_height;
-            state.updFloat(res, "u_BgRes");
-
-        }
-        ImGui::SliderFloat("Zoom", &state.zoom, 0.f, 25.f);
-        ImGui::End();
-
-        ImGui::Render();
+        ui.renderUI(state, w_width, w_height, canvas_width, canvas_height, res);
+        
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
 

@@ -151,6 +151,17 @@ void main()
     //get the blend mask
     vec4 proxy = texture2D(texture1, texcoord);
     
+    vec4 proxyRight = texture2D(texture1, vec2(dFdx(texcoord.x), 0.0));
+    vec4 proxyUp = texture2D(texture1, texcoord + vec2(0.0, dFdy(texcoord.y)));
+
+    // Calculate the partial derivatives of the height map
+    //vec3 dpdx = vec3(1.0, 0.0, heightRight - height);
+    //vec3 dpdy = vec3(0.0, 1.0, heightUp - height);
+
+    // Calculate the normal by taking the cross product of the partial derivatives
+    //vec3 normal = normalize(cross(dpdx, dpdy));
+    
+    
     //get the noise
     vec4 water_noise = vec4(vec3(fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_Color.x)) + 0.5f, 1.f) * proxy.z;
     float terrain_noise_small = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * 4.0) ;//figure out why whole noise is less than 0.5
