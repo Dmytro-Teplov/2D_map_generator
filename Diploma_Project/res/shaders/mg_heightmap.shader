@@ -13,7 +13,8 @@ uniform mat4 projection;
 
 void main()
 {
-    gl_Position = projection * view * model * vec4(position.xyz, 1.0);
+    //gl_Position = projection * view * model * vec4(position.xyz, 1.0);
+    gl_Position = position;
     texcoord = texCoord;
 };
 
@@ -174,24 +175,29 @@ void main()
     terrain_mask = clamp(terrain_mask + water_mask, 0.0, 1.0);
 
     //blend water and terrain
-    if (terrain_mask < 0.45)//water
-        color = mix(vec4(0.2, 0.5, 0.5, 1.0), vec4(0.9, 0.8, 0.7, 1.0), terrain_mask/0.45 );
-    if (terrain_mask >= 0.45)//send shore
-        color = mix(vec4(0.9, 0.8, 0.7, 1.0), vec4(0.7, 0.6, 0.5, 1.0), (terrain_mask - 0.45) / 0.15);
-    if (terrain_mask > 0.6)//terrain
-        color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (terrain_mask - 0.6) / 0.35);
-    if (terrain_mask > 0.95)//rocky mountains
-        color = vec4(0.9, 0.9, 0.9, 1.0);
+    //if (terrain_mask < 0.45)//water
+    //    color = mix(vec4(0.2, 0.5, 0.5, 1.0), vec4(0.9, 0.8, 0.7, 1.0), terrain_mask / 0.45);
+    //if (terrain_mask >= 0.45)//send shore
+    //    color = mix(vec4(0.9, 0.8, 0.7, 1.0), vec4(0.7, 0.6, 0.5, 1.0), (terrain_mask - 0.45) / 0.15);
+    //if (terrain_mask > 0.6)//terrain
+    //    color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (terrain_mask - 0.6) / 0.35);
+    //if (terrain_mask > 0.95)//rocky mountains
+    //    color = vec4(0.9, 0.9, 0.9, 1.0);
+    color.a = terrain_mask;
+     //blend water and terrain
+    //color = vec4(terrain_mask);
+    //color = vec4(1.0);
+    
     
     //foam
-    if (terrain_mask > 0.25 && terrain_mask < 0.3 && (terrain_noise_big > 0.05 || terrain_noise_small > 0.15))
-        color =  vec4(0.9, 0.9, 0.9, 1.0);
+    //if (terrain_mask > 0.25 && terrain_mask < 0.3 && (terrain_noise_big > 0.05 || terrain_noise_small > 0.15))
+        //color =  vec4(0.9, 0.9, 0.9, 1.0);
     
     
 
     //paths
-    if (proxy.g>0.01)
-        color = mix(color, vec4(0.7, 0.6, 0.5, 1.0), proxy.g);
+    //if (proxy.g>0.01)
+        //color = mix(color, vec4(0.7, 0.6, 0.5, 1.0), proxy.g);
     
     ;
     

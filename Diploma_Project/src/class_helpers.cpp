@@ -47,8 +47,7 @@ Quad::Quad(float vertices_[20], int pos_stride_, int uv_stride_, unsigned int in
 }
 void Quad::initialize()
 {
-
-    
+     
     //unsigned int vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -137,11 +136,15 @@ void Quad::draw()
 StateHandler::StateHandler()
 {
 }
+void StateHandler::attachFramebuffer(unsigned int framebuffer_)
+{
+    framebuffer = framebuffer_;
+    glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);
+}
 void StateHandler::attachShader(unsigned int shader_)
 {
     shader = shader_;
     glUseProgram(shader);
-    std::cout << glGetError();
 }
 void StateHandler::updMat(glm::mat4 matrix, const char* matrix_name)
 {
@@ -155,14 +158,20 @@ void StateHandler::updFloat(float num, const char* name)
     glUniform1f(location, num);
 }
 
+void StateHandler::updVec(glm::vec3 vec, const char* vec_name)
+{
+    int location = glGetUniformLocation(shader, vec_name);
+    glUniform3fv(location, 1, glm::value_ptr(vec));
+}
+
 void UiHandler::renderUI(StateHandler& state, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
-    ImGui::SetNextWindowSize(ImVec2(w_width / 6.0, w_height));
+    //ImGui::SetNextWindowSize(ImVec2(w_width / 6.0, w_height));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
 
     
 
-    ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     
     ImVec2 contentRegionAvail = ImGui::GetContentRegionAvail();
     

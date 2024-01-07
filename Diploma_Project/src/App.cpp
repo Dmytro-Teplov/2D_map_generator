@@ -11,7 +11,7 @@
 #include <stb_image.h>
 
 StateHandler state;
-
+glm::vec3 sun = glm::vec3(1.0, 1.0, 1.0);
 //void setCustomFont() 
 //{
 //    ImGuiIO& io = ImGui::GetIO();
@@ -46,8 +46,15 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
     }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
     {
-        state.mouse_pressed = false;
-        state.view = glm::translate(state.view, state.transform);
+        //CHECK IF MOUSE IN THE UI AREA AND DISCARD THE CHANGES
+        double x, y;
+        int w_width, w_height;
+        glfwGetCursorPos(window, &x, &y);
+        glfwGetWindowSize(window, &w_width, &w_height);
+        //still doesnt work, so for now using UI for zoom is a bad idea
+        if (x > w_width / 6.0)
+            state.mouse_pressed = false;
+            state.view = glm::translate(state.view, state.transform);
     }
 
 }
@@ -113,12 +120,15 @@ int main(void)
     };
 
 
-    ShaderProgramSource sources;
+    ShaderProgramSource heightmap_sources,terrain_sources;
 
-    sources = ParseShader("res/shaders/Terrain.shader");
-
-    unsigned int shader = CreateShader(sources.vertexShader, sources.fragmentShader);
-
+    heightmap_sources = ParseShader("res/shaders/mg_heightmap.shader");
+    unsigned int heightmap_shader = CreateShader(heightmap_sources.vertexShader, heightmap_sources.fragmentShader);
+    
+    terrain_sources = ParseShader("res/shaders/mg_terrain.shader");
+    unsigned int terrain_shader = CreateShader(terrain_sources.vertexShader, terrain_sources.fragmentShader);
+    
+    
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
 
@@ -127,7 +137,7 @@ int main(void)
     background.initialize();
     background.debug();
 
-    Quad house(positions_2, 5, 5, indices, "res/assets/Proxy_map_3.png");
+    Quad house(positions, 5, 5, indices, "res/assets/Proxy_map_3.png");
     house.initialize();
     house.debug();
     Quad quad3(positions_3, 5, 5, indices, "res/assets/Proxy_map.png");
@@ -135,14 +145,40 @@ int main(void)
     quad3.debug();
 
 
-    state.attachShader(shader);
+    state.attachShader(terrain_shader);
     state.updMat(state.model, "model");
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
-
-
+    state.updVec(sun, "u_sun_pos");
     float res = (float)canvas_width / canvas_height;
     state.updFloat(res, "u_BgRes");
+
+    state.attachShader(heightmap_shader);
+    state.updMat(state.model, "model");
+    state.updMat(state.view, "view");
+    state.updMat(state.projection, "projection");
+    state.updFloat(res, "u_BgRes");
+    
+
+
+
+    unsigned int heightmap;
+    glGenTextures(1, &heightmap);
+    glBindTexture(GL_TEXTURE_2D, heightmap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    unsigned int fb;
+    glGenFramebuffers(1,&fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "frame buffer is done\n";
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, heightmap, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    background.texture = heightmap;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -158,6 +194,7 @@ int main(void)
     double x = 0;
     double y = 0;
 
+    glm::mat4 view_relative;
 
     UiHandler ui;
     ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
@@ -171,27 +208,62 @@ int main(void)
         ImGui::NewFrame();
 
         glfwGetWindowSize(window, &w_width, &w_height);
+        glViewport(0, 0, w_width, w_height);
+        //state.projection = glm::ortho(-(float)canvas_width, (float)canvas_width, -(float)canvas_height, (float)canvas_height, 0.1f, 100.0f);
+        //state.projection = glm::ortho(0.0f, (float)canvas_width, 0.0f, (float)canvas_height, 0.1f, 100.0f);
+        //state.model = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0));
+        //state.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+        //state.updMat(state.projection, "projection");
+        ////state.updMat(state.model, "model");
+        //state.updMat(state.view, "view");
 
-        windowResizeHandler(w_width, w_height);
-        state.projection = glm::scale(glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f), glm::vec3(state.zoom, state.zoom, state.zoom));
+        //if (state.mouse_pressed)
+        //{
+        //    glfwGetCursorPos(window, &x, &y);
+        //    if (x > w_width / 6.0) 
+        //    {
+        //        state.transform = glm::vec3(2) * glm::vec3((x - state.last_x) / state.zoom, -(y - state.last_y) / state.zoom, 0.0f);
+        //        glm::mat4 view_relative = glm::translate(state.view, state.transform);
+        //        state.updMat(view_relative, "view");
+        //    }
+        //    //house.draw();
+
+        //}
+        //WEIRD DRQAWING OF THE HEIGHTMAP HAVE REALLY NO IDEA
+        state.attachFramebuffer(fb);
+        house.draw();
+        
+        state.attachShader(terrain_shader);
+        state.attachFramebuffer(0);
+        //glViewport(0, 0, w_width, w_height);
+        state.transform = glm::vec3(state.zoom);
+        view_relative = glm::scale(state.view, glm::vec3(state.zoom, state.zoom, state.zoom));
+        //view_relative = glm::translate(state.view, glm::vec3(0, 0, -state.zoom));//DOESNT WORK IN ORTHO
+        state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
+        state.updMat(view_relative, "view");
         state.updMat(state.projection, "projection");
-
+        state.updFloat(w_width, "u_width");
+        state.updFloat(w_height, "u_height");
         if (state.mouse_pressed)
         {
+            //state.view = view_relative;
             glfwGetCursorPos(window, &x, &y);
-            if (x > w_width / 6.0) 
+            if (x > w_width / 6.0)
             {
-                state.transform = glm::vec3(2) * glm::vec3((x - state.last_x) / state.zoom, -(y - state.last_y) / state.zoom, 0.0f);
-                glm::mat4 view_relative = glm::translate(state.view, state.transform);
-                state.updMat(view_relative, "view");
+                state.transform = glm::vec3(2)*glm::vec3((x - state.last_x), -(y - state.last_y), 0.0f);
+                view_relative = glm::translate(view_relative, state.transform / glm::vec3(state.zoom));
             }
-            //house.draw();
 
         }
-
+        state.updMat(view_relative, "view");
+        //background.texture = heightmap;
         background.draw();
-        house.draw();
-        quad3.draw();
+
+        state.attachShader(heightmap_shader);
+        
+        
+        //house.draw();
+        //quad3.draw();
         ui.renderUI(state, w_width, w_height, canvas_width, canvas_height, res);
         
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -206,7 +278,8 @@ int main(void)
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    glDeleteProgram(shader);
+    glDeleteProgram(heightmap_shader);
+    glDeleteProgram(terrain_shader);
 
     glfwTerminate();
     return 0;

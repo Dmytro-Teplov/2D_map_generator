@@ -10,14 +10,9 @@ struct ShaderProgramSource
 	std::string vertexShader;
 	std::string fragmentShader;
 };
-
 ShaderProgramSource ParseShader(const std::string& source);
-
 unsigned int CompileShader(unsigned int type, const std::string& source);
-
 unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
-
-
 
 class VertexBuffer
 {
@@ -52,3 +47,4 @@ public:
 
 	inline unsigned int getCount() const { return indCount; }
 };
+
