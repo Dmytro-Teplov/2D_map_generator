@@ -30,9 +30,9 @@ public:
     bool mouse_pressed = false;
 
     glm::vec3 transform = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(100.0f, 100.0f, 1.0f));
+    glm::mat4 model = glm::mat4(1.0f);//for future add this to the quad class
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-    glm::mat4 projection = glm::ortho(-2.0f, +2.0f, -1.5f, +1.5f, 0.1f, 100.0f);
+    glm::mat4 projection = glm::ortho(-1.0f, +1.0f, -1.0f, +1.0f, 0.1f, 100.0f);
 
     StateHandler();
     void attachFramebuffer(unsigned int framebuffer_);

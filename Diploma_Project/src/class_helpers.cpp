@@ -166,12 +166,12 @@ void StateHandler::updVec(glm::vec3 vec, const char* vec_name)
 
 void UiHandler::renderUI(StateHandler& state, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
-    //ImGui::SetNextWindowSize(ImVec2(w_width / 6.0, w_height));
+    ImGui::SetNextWindowSize(ImVec2(w_width / 6.0, w_height));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
 
     
 
-    ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     
     ImVec2 contentRegionAvail = ImGui::GetContentRegionAvail();
     
@@ -179,13 +179,34 @@ void UiHandler::renderUI(StateHandler& state, int& w_width, int& w_height, int& 
 
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
     sliderPosX = (contentRegionAvail.x - ImGui::CalcTextSize(" Maps Generator").x) * 0.5;
-    //sliderPosY = contentRegionAvail.y - ImGui::GetTextLineHeightWithSpacing() * 2;
     ImGui::SetCursorPos(ImVec2(sliderPosX, 0));
     ImGui::Text("Maps Generator");
     ImGui::PopFont();
-    /*ImGui::SliderFloat("Color", &c, 0.0f, 100.0f);
-    ImGui::SliderFloat("Size", &sz, 0.0f, 200.0f);*/
+   
+    if (ImGui::Button("Move Tool",ImVec2(contentRegionAvail.x, 30)))//bad constants meh
+    {
+    }
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
+    ImGui::SetCursorPos(ImVec2((contentRegionAvail.x - ImGui::CalcTextSize("Brushes").x) * 0.5, ImGui::GetCursorPos().y));
+    ImGui::Text(" Brushes");
+    ImGui::PopFont();
+    if (ImGui::Button("Terrain", ImVec2(contentRegionAvail.x, 30)))
+    {
 
+    }
+    if (ImGui::Button("Water", ImVec2(contentRegionAvail.x, 30)))
+    {
+    }
+    if (ImGui::Button("Buildings", ImVec2(contentRegionAvail.x, 30)))
+    {
+    }
+    if (ImGui::Button("Flora", ImVec2(contentRegionAvail.x, 30)))
+    {
+    }
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
+    ImGui::SetCursorPos(ImVec2((contentRegionAvail.x - ImGui::CalcTextSize("Canvas").x) * 0.5, ImGui::GetCursorPos().y));
+    ImGui::Text(" Canvas");
+    ImGui::PopFont();
     ImGui::InputInt("canvas width", &canvas_width);
     ImGui::InputInt("canvas height", &canvas_height);
     if (ImGui::Button("Change the size"))
@@ -194,11 +215,19 @@ void UiHandler::renderUI(StateHandler& state, int& w_width, int& w_height, int& 
         std::cout << canvas_width << " " << canvas_height << std::endl;
         state.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
         state.updMat(state.model, "model");
-        resolution = (float)canvas_width / canvas_height;
-        state.updFloat(resolution, "u_BgRes");
+        //resolution = (float)canvas_width / canvas_height;
+        //state.updFloat(resolution, "u_BgRes");
 
     }
+    if (ImGui::Button("Reset"))
+    {
+        
+        state.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+        state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
+        state.updMat(state.view, "view");
+        state.updMat(state.projection, "projection");
 
+    }
     sliderPosX = (contentRegionAvail.x - ImGui::CalcTextSize("Zoom").x) * 0.5;
     sliderPosY = contentRegionAvail.y - ImGui::GetTextLineHeightWithSpacing() * 2;
     
