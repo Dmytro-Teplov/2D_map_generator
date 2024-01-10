@@ -183,6 +183,7 @@ void main()
     //    color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (terrain_mask - 0.6) / 0.35);
     //if (terrain_mask > 0.95)//rocky mountains
     //    color = vec4(0.9, 0.9, 0.9, 1.0);
+    color.rgb = vec3(terrain_mask);
     color.a = terrain_mask;
      //blend water and terrain
     //color = vec4(terrain_mask);
@@ -199,7 +200,7 @@ void main()
     //if (proxy.g>0.01)
         //color = mix(color, vec4(0.7, 0.6, 0.5, 1.0), proxy.g);
     
-    ;
+
     
 
 };

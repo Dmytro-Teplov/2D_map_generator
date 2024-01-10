@@ -13,7 +13,7 @@
 StateHandler state;
 glm::vec3 sun = glm::vec3(1.0, 1.0, 1.0);
 int w_width, w_height;
-
+glm::mat4 relative_cursor = glm::mat4(1.0f);
 void windowResizeHandler(int window_width, int window_height) {
     glViewport(0, 0, window_width, window_height);
 }
@@ -28,25 +28,29 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 void mouse_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    if (state.sel_tool == 0) 
     {
-        //int w_width, w_height;
-        glfwGetCursorPos(window, &state.last_x, &state.last_y);
-        glfwGetWindowSize(window, &w_width, &w_height);
-        if (state.last_x > w_width / 6.0) 
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
         {
-            state.mouse_pressed = true;
+            //int w_width, w_height;
+            glfwGetCursorPos(window, &state.last_x, &state.last_y);
+            glfwGetWindowSize(window, &w_width, &w_height);
 
+            if (state.last_x > state.batman_panel_width && state.last_x < state.robin_panel_width)
+            {
+                state.mouse_pressed = true;
+
+            }
         }
-    }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-    {
-        double x, y;
-        glfwGetCursorPos(window, &x, &y);
-        glfwGetWindowSize(window, &w_width, &w_height);
-        if (x > w_width / 6.0) {
-            state.mouse_pressed = false;
-            state.view = glm::translate(state.view, state.transform);
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+        {
+            /*double x, y;
+            glfwGetCursorPos(window, &x, &y);*/
+            glfwGetWindowSize(window, &w_width, &w_height);
+            if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
+                state.mouse_pressed = false;
+                state.view = glm::translate(state.view, state.transform);
+            }
         }
     }
 
@@ -113,50 +117,67 @@ int main(void)
     };
 
 
-    ShaderProgramSource heightmap_sources,terrain_sources;
+    ShaderProgramSource heightmap_sources, terrain_sources, cursor_sources;
 
     heightmap_sources = ParseShader("res/shaders/mg_heightmap.shader");
     unsigned int heightmap_shader = CreateShader(heightmap_sources.vertexShader, heightmap_sources.fragmentShader);
     
     terrain_sources = ParseShader("res/shaders/mg_terrain.shader");
     unsigned int terrain_shader = CreateShader(terrain_sources.vertexShader, terrain_sources.fragmentShader);
+
+    cursor_sources = ParseShader("res/shaders/mg_cursor.shader");
+    unsigned int cursor_shader = CreateShader(cursor_sources.vertexShader, cursor_sources.fragmentShader);
     
     
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
 
     //Quad assets[128];
-    Quad background(positions, 5, 5, indices, "res/assets/Proxy_map_2.png");
-    background.initialize();
-    background.debug();
+    
+
+    Quad canvas(positions, 5, 5, indices, "res/assets/Proxy_map_2.png");
+    canvas.initialize(true);
+    canvas.debug();
 
     Quad house(positions, 5, 5, indices, "res/assets/Proxy_map_2.png");
-    house.initialize();
+    house.initialize(true);
     house.debug();
-    Quad quad3(positions_3, 5, 5, indices, "res/assets/Proxy_map.png");
-    quad3.initialize();
-    quad3.debug();
+
+    Quad brush(100,100);
+    brush.initialize(false);
+    brush.debug();
+
+    state.window = window;
 
 
     state.attachShader(terrain_shader);
-    state.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
+    canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
     state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
-    state.updMat(state.model, "model");
-    state.model = glm::mat4(1.0f);
+    state.updMat(canvas.model, "model");
+    canvas.model = glm::mat4(1.0f);
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
     state.updVec(sun, "u_sun_pos");
     float res = (float)canvas_width / canvas_height;
     state.updFloat(res, "u_BgRes");
 
+
+    state.attachShader(cursor_shader);
+    //brush.model = glm::scale(glm::mat4(1.0f), glm::vec3(state.brush_size, state.brush_size, 1.0f));
+    state.updMat(brush.model, "model");
+    state.updMat(state.view, "view");
+    state.updMat(state.projection, "projection");
+    state.updVec(glm::vec2(w_width, w_height), "u_resolution");
+    state.updVec(glm::vec2(0, 0), "u_pos");
+    state.updFloat(state.brush_size, "u_circle_size");
+
     state.attachShader(heightmap_shader);
-    state.updMat(state.model, "model");
+    state.updMat(canvas.model, "model");
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
     state.updFloat(res, "u_BgRes");
     
-
-
+    
 
     unsigned int heightmap;
     glGenTextures(1, &heightmap);
@@ -174,7 +195,7 @@ int main(void)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    background.texture = heightmap;
+    canvas.texture = heightmap;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -205,17 +226,19 @@ int main(void)
 
         glfwGetWindowSize(window, &w_width, &w_height);
         glViewport(0, 0, w_width, w_height);
-        
+        glfwGetCursorPos(window, &state.curs_x, &state.curs_y);
+
+        //FRAME BUFFER GENERATION
+        glBindTexture(GL_TEXTURE_2D, heightmap);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         state.attachFramebuffer(fb);
         house.draw();
-        
+
+        //CANVAS DRAWING 
         state.attachShader(terrain_shader);
         state.attachFramebuffer(0);
-
         state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
         state.updMat(state.projection, "projection");
-
         state.transform = glm::vec3(state.zoom);
         view_relative = glm::scale(state.view, glm::vec3(state.zoom, state.zoom, state.zoom));
         state.updMat(view_relative, "view");
@@ -231,14 +254,29 @@ int main(void)
 
         }
         state.updMat(view_relative, "view");
-        background.draw();
+        canvas.draw();
 
-        ui.renderUI(state, w_width, w_height, canvas_width, canvas_height, res);
+        //CURSOR DRAWING
+        if (state.sel_tool != 0)
+        {
+            state.attachShader(cursor_shader);
+            relative_cursor = glm::translate(brush.model, glm::vec3(state.curs_x - w_width / 2.0, -state.curs_y + w_height / 2.0, 0) * glm::vec3(2));
+            relative_cursor = glm::scale(relative_cursor, glm::vec3(state.brush_size));
+            state.updMat(state.projection, "projection");
+            state.updMat(relative_cursor, "model");
+            state.updFloat(state.brush_size, "u_circle_size");
+            state.updVec(glm::vec2(state.curs_x, w_height - state.curs_y), "u_pos");
+            brush.draw();
+        }
+        
+
+        //UI
+        ui.renderUI(state, canvas, w_width, w_height, canvas_width, canvas_height, res);
+
         state.attachShader(heightmap_shader);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
-
         /* Poll for and process events */
         glfwPollEvents();
     }

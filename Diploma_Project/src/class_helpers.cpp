@@ -45,7 +45,32 @@ Quad::Quad(float vertices_[20], int pos_stride_, int uv_stride_, unsigned int in
     texture_path = texture_path_;
 
 }
-void Quad::initialize()
+Quad::Quad(int width, int height)
+{
+    float vertices_[20] = {
+    -1.0f,  -1.0f, 0.0, 0.0, 1.0,
+     1.0f,  -1.0f, 0.0, 1.0, 1.0,
+     1.0f,   1.0f, 0.0, 1.0, 0.0,
+    -1.0f,   1.0f, 0.0, 0.0, 0.0
+    };
+    unsigned int indices_[6] = {
+    0,1,2,
+    2,3,0
+    };
+    int pos_stride_ = 5;
+    int uv_stride_ = 5;
+    for (int i = 0; i < 20; i++) {
+        vertices[i] = vertices_[i];
+        if (i < 6)
+        {
+            indices[i] = indices_[i];
+        }
+    }
+    position_stride = pos_stride_;
+    uv_stride = uv_stride_;
+    texture_path = "";
+}
+void Quad::initialize(bool use_texture)
 {
      
     //unsigned int vao;
@@ -68,35 +93,38 @@ void Quad::initialize()
 
 
     // Load the image data
-    int channels;
-    int width, height;
-    unsigned char* imageData = stbi_load(texture_path, &width, &height, &channels, 4);
-    if (imageData == nullptr) {
-        std::cout << stbi_failure_reason();
-        stbi_image_free(imageData);
+    if (use_texture) 
+    {
+        int channels;
+        int width, height;
+        unsigned char* imageData = stbi_load(texture_path, &width, &height, &channels, 4);
+        if (imageData == nullptr) {
+            std::cout << stbi_failure_reason();
+            stbi_image_free(imageData);
+        }
+        //unsigned int texture;
+        glGenTextures(1, &texture);
+        glActiveTexture(GL_TEXTURE0);
+
+        // Bind the texture object
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        // Upload the image data to the texture object
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+        std::cout << width << " " << height << " " << channels << " " << glGetError();
+
+        // Specify the texture parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        std::cout << glGetError();
+        // Unbind the texture object
+        //glBindTexture(GL_TEXTURE_2D, 0);
+
+        //glUseProgram(shader);
+        //std::cout << glGetError();
     }
-    //unsigned int texture;
-    glGenTextures(1, &texture);
-    glActiveTexture(GL_TEXTURE0);
-
-    // Bind the texture object
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    // Upload the image data to the texture object
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-    std::cout << width << " " << height << " " << channels << " " << glGetError();
-
-    // Specify the texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    std::cout << glGetError();
-
-    // Unbind the texture object
-    //glBindTexture(GL_TEXTURE_2D, 0);
-
-    //glUseProgram(shader);
-    //std::cout << glGetError();
+    
 }
 void Quad::changeSize(float canvas_ratio, bool w_ratio)
 {
@@ -136,6 +164,7 @@ void Quad::draw()
 StateHandler::StateHandler()
 {
 }
+
 void StateHandler::attachFramebuffer(unsigned int framebuffer_)
 {
     framebuffer = framebuffer_;
@@ -163,49 +192,64 @@ void StateHandler::updVec(glm::vec3 vec, const char* vec_name)
     int location = glGetUniformLocation(shader, vec_name);
     glUniform3fv(location, 1, glm::value_ptr(vec));
 }
-
-void UiHandler::renderUI(StateHandler& state, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void StateHandler::updVec(glm::vec2 vec, const char* vec_name)
 {
-    ImGui::SetNextWindowSize(ImVec2(w_width / 6.0, w_height));
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    int location = glGetUniformLocation(shader, vec_name);
+    glUniform2fv(location, 1, glm::value_ptr(vec));
+}
 
-    
-
-    ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-    
+void UiHandler::renderUI(StateHandler& state,Quad& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+{
+    ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
+    state.batman_panel_width = windowSize.x;
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    ImGuiStyle& style = ImGui::GetStyle();
     ImVec2 contentRegionAvail = ImGui::GetContentRegionAvail();
     
+    if (ImGui::IsWindowHovered())
+    {
+        glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        state.panel_hovered = true;
+    }
+    else
+    {
+        if(state.sel_tool != 0)
+            glfwSetInputMode(state.window, GLFW_CURSOR,GLFW_CURSOR_HIDDEN);
+    }
 
 
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-    sliderPosX = (contentRegionAvail.x - ImGui::CalcTextSize(" Maps Generator").x) * 0.5;
+    sliderPosX = (windowSize.x - ImGui::CalcTextSize("Maps Generator").x) * 0.5;
     ImGui::SetCursorPos(ImVec2(sliderPosX, 0));
     ImGui::Text("Maps Generator");
     ImGui::PopFont();
    
-    if (ImGui::Button("Move Tool",ImVec2(contentRegionAvail.x, 30)))//bad constants meh
+    if (ImGui::Button("Move Tool",ImVec2(windowSize.x, 30)))//bad constants meh
     {
+        state.sel_tool = 0;
     }
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
     ImGui::SetCursorPos(ImVec2((contentRegionAvail.x - ImGui::CalcTextSize("Brushes").x) * 0.5, ImGui::GetCursorPos().y));
-    ImGui::Text(" Brushes");
+    ImGui::Text("Brushes");
     ImGui::PopFont();
-    if (ImGui::Button("Terrain", ImVec2(contentRegionAvail.x, 30)))
+    if (ImGui::Button("Terrain", ImVec2(windowSize.x, 30)))
     {
-
+        state.sel_tool = 1;
     }
-    if (ImGui::Button("Water", ImVec2(contentRegionAvail.x, 30)))
-    {
-    }
-    if (ImGui::Button("Buildings", ImVec2(contentRegionAvail.x, 30)))
+    if (ImGui::Button("Water", ImVec2(windowSize.x, 30)))
     {
     }
-    if (ImGui::Button("Flora", ImVec2(contentRegionAvail.x, 30)))
+    if (ImGui::Button("Buildings", ImVec2(windowSize.x, 30)))
+    {
+    }
+    if (ImGui::Button("Flora", ImVec2(windowSize.x, 30)))
     {
     }
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-    ImGui::SetCursorPos(ImVec2((contentRegionAvail.x - ImGui::CalcTextSize("Canvas").x) * 0.5, ImGui::GetCursorPos().y));
-    ImGui::Text(" Canvas");
+    ImGui::SetCursorPos(ImVec2((windowSize.x - ImGui::CalcTextSize("Canvas").x) * 0.5, ImGui::GetCursorPos().y));
+    ImGui::Text("Canvas");
     ImGui::PopFont();
     ImGui::InputInt("canvas width", &canvas_width);
     ImGui::InputInt("canvas height", &canvas_height);
@@ -213,8 +257,8 @@ void UiHandler::renderUI(StateHandler& state, int& w_width, int& w_height, int& 
     {
         std::cout << w_width << " " << w_height << std::endl;
         std::cout << canvas_width << " " << canvas_height << std::endl;
-        state.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
-        state.updMat(state.model, "model");
+        canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
+        state.updMat(canvas.model, "model");
         //resolution = (float)canvas_width / canvas_height;
         //state.updFloat(resolution, "u_BgRes");
 
@@ -228,23 +272,29 @@ void UiHandler::renderUI(StateHandler& state, int& w_width, int& w_height, int& 
         state.updMat(state.projection, "projection");
 
     }
-    sliderPosX = (contentRegionAvail.x - ImGui::CalcTextSize("Zoom").x) * 0.5;
-    sliderPosY = contentRegionAvail.y - ImGui::GetTextLineHeightWithSpacing() * 2;
+    sliderPosX = (windowSize.x - ImGui::CalcTextSize("Zoom").x) * 0.5;
+    sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
     
     ImGui::SetCursorPos(ImVec2(sliderPosX, sliderPosY));
     ImGui::Text("Zoom");
 
     // Calculate the position for the centered slider
-    sliderWidth = (3.f/4.f)* contentRegionAvail.x; // Adjust the width as needed
-    //float sliderPosX = (contentRegionAvail.x - sliderWidth) * 0.5f;
-    //float sliderPosY = ImGui::GetCursorPos().y + contentRegionAvail.y - ImGui::GetTextLineHeightWithSpacing()*2;
-    sliderPosX = (contentRegionAvail.x - sliderWidth)*0.5;
-    sliderPosY = contentRegionAvail.y - ImGui::GetTextLineHeightWithSpacing();
+    sliderWidth = (3.f/4.f)* windowSize.x; // Adjust the width as needed
+    sliderPosX = (windowSize.x - sliderWidth)*0.5;
+    sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing();
     ImGui::SetCursorPos(ImVec2(sliderPosX, sliderPosY));
     ImGui::SliderFloat("##", &state.zoom, 0.f, 25.f);
-
     ImGui::End();
-
+    
+    switch (state.sel_tool) 
+    {
+        case 0:
+            state.robin_panel_width = w_width;
+            break;
+        case 1:
+            terrainPanel(state, w_width, w_height, canvas_width, canvas_height, resolution);
+            break;
+    }
     ImGui::Render();
     
 }
@@ -345,4 +395,40 @@ void UiHandler::setCustomFont(const char regular[], const char bold[])
 
     // Set the font for the current session
     io.FontDefault = io.Fonts->Fonts.front();
+}
+
+void UiHandler::terrainPanel(StateHandler& state, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+{
+    ImGui::Begin("Terrain Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
+    ImGui::SetWindowPos(ImVec2(w_width - windowSize.x, 0));
+    state.robin_panel_width = w_width - windowSize.x;
+    if (ImGui::IsWindowHovered())
+    {
+        state.panel_hovered = true;
+        glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    else
+    {
+        if(!state.panel_hovered && state.sel_tool != 0)
+            glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
+
+    sliderPosX = (windowSize.x - ImGui::CalcTextSize("Brush Size").x) * 0.5;
+    sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
+
+    ImGui::SetCursorPos(ImVec2(sliderPosX, 0));
+    ImGui::Text("Brush Size");
+
+    // Calculate the position for the centered slider
+    sliderWidth = (3.f / 4.f) * windowSize.x; // Adjust the width as needed
+    sliderPosX = (windowSize.x - sliderWidth) * 0.5;
+    sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing();
+    ImVec2 curPos = ImGui::GetCursorPos();
+    ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
+    ImGui::SliderFloat("##", &state.brush_size, 0.f, 250.f);
+
+
+    ImGui::End();
 }
