@@ -14,6 +14,7 @@ StateHandler state;
 glm::vec3 sun = glm::vec3(1.0, 1.0, 1.0);
 int w_width, w_height;
 glm::mat4 relative_cursor = glm::mat4(1.0f);
+Canvas canvas(100, 100);
 void windowResizeHandler(int window_width, int window_height) {
     glViewport(0, 0, window_width, window_height);
 }
@@ -50,6 +51,46 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
                 state.mouse_pressed = false;
                 state.view = glm::translate(state.view, state.transform);
+                canvas.calculateSSBB(state);
+            }
+        }
+    }
+    else if (state.sel_tool == 1|| state.sel_tool == 2)
+    {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        {
+            glfwGetCursorPos(window, &state.last_x, &state.last_y);
+            if (canvas.isInside(state.last_x, state.last_y))
+            {
+                state.brush_pressed = true;
+                std::cout << "inside canvas\n";
+            }
+        }
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+        {
+            state.brush_pressed = false;
+        }
+        if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+        {
+            //int w_width, w_height;
+            glfwGetCursorPos(window, &state.last_x, &state.last_y);
+            glfwGetWindowSize(window, &w_width, &w_height);
+
+            if (state.last_x > state.batman_panel_width && state.last_x < state.robin_panel_width)
+            {
+                state.mouse_pressed = true;
+
+            }
+        }
+        if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+        {
+            /*double x, y;
+            glfwGetCursorPos(window, &x, &y);*/
+            glfwGetWindowSize(window, &w_width, &w_height);
+            if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
+                state.mouse_pressed = false;
+                state.view = glm::translate(state.view, state.transform);
+                canvas.calculateSSBB(state);
             }
         }
     }
@@ -134,27 +175,31 @@ int main(void)
 
     //Quad assets[128];
     
-
-    Quad canvas(positions, 5, 5, indices, "res/assets/Proxy_map_2.png");
-    canvas.initialize(true);
+    canvas.initialize(false);
+    //canvas.addFrameBufferQuad(w_width, w_height, heightmap_shader, "res/assets/default_map.png");
+    canvas.setTexture("res/assets/default_map.png");
     canvas.debug();
+    canvas.setShader(terrain_shader);
 
-    Quad house(positions, 5, 5, indices, "res/assets/Proxy_map_2.png");
-    house.initialize(true);
-    house.debug();
+    Quad frm_buffr(w_width, w_height);
+    //frm_buffr.setTexture("res/assets/default_map.png");
+    frm_buffr.initialize(false);
+    frm_buffr.texture = canvas.fb_texture;
+    frm_buffr.debug();
+    frm_buffr.setShader(heightmap_shader);
 
     Quad brush(100,100);
     brush.initialize(false);
     brush.debug();
+    brush.setShader(cursor_shader);
 
     state.window = window;
 
-
     state.attachShader(terrain_shader);
-    canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
+    canvas.setSize(state, canvas_width, canvas_height);
+    //canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
     state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
-    state.updMat(canvas.model, "model");
-    canvas.model = glm::mat4(1.0f);
+    //state.updMat(canvas.model, "model");
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
     state.updVec(sun, "u_sun_pos");
@@ -172,7 +217,7 @@ int main(void)
     state.updFloat(state.brush_size, "u_circle_size");
 
     state.attachShader(heightmap_shader);
-    state.updMat(canvas.model, "model");
+    state.updMat(frm_buffr.model, "model");
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
     state.updFloat(res, "u_BgRes");
@@ -216,6 +261,9 @@ int main(void)
     UiHandler ui;
     ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
     ui.setCustomStyle();
+
+    Painter painter;
+
     while (!glfwWindowShouldClose(window))
     {
         /* Render here */
@@ -225,6 +273,8 @@ int main(void)
         ImGui::NewFrame();
 
         glfwGetWindowSize(window, &w_width, &w_height);
+        state.w_width = w_width;
+        state.w_height = w_height;
         glViewport(0, 0, w_width, w_height);
         glfwGetCursorPos(window, &state.curs_x, &state.curs_y);
 
@@ -232,7 +282,7 @@ int main(void)
         glBindTexture(GL_TEXTURE_2D, heightmap);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         state.attachFramebuffer(fb);
-        house.draw();
+        frm_buffr.draw();
 
         //CANVAS DRAWING 
         state.attachShader(terrain_shader);
@@ -246,19 +296,22 @@ int main(void)
         {
             //state.view = view_relative;
             glfwGetCursorPos(window, &x, &y);
-            if (x > w_width / 6.0)
+
+            if (x > state.batman_panel_width)
             {
                 state.transform = glm::vec3(2)*glm::vec3((x - state.last_x), -(y - state.last_y), 0.0f);
                 view_relative = glm::translate(view_relative, state.transform / glm::vec3(state.zoom));
             }
 
         }
+        
         state.updMat(view_relative, "view");
         canvas.draw();
 
         //CURSOR DRAWING
         if (state.sel_tool != 0)
         {
+
             state.attachShader(cursor_shader);
             relative_cursor = glm::translate(brush.model, glm::vec3(state.curs_x - w_width / 2.0, -state.curs_y + w_height / 2.0, 0) * glm::vec3(2));
             relative_cursor = glm::scale(relative_cursor, glm::vec3(state.brush_size));
@@ -267,7 +320,13 @@ int main(void)
             state.updFloat(state.brush_size, "u_circle_size");
             state.updVec(glm::vec2(state.curs_x, w_height - state.curs_y), "u_pos");
             brush.draw();
-        }
+            if (state.brush_pressed)
+            {
+                glfwGetCursorPos(window, &x, &y);
+                painter.brush_size = state.brush_size;
+                painter.paint(x,y,canvas,state.sel_tool);
+            }
+        }   
         
 
         //UI

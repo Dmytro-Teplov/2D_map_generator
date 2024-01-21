@@ -2,6 +2,8 @@
 
 #include "class_helpers.h"
 #include <stb_image.h>
+#include <cmath> 
+#include <cstring> 
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
@@ -48,10 +50,10 @@ Quad::Quad(float vertices_[20], int pos_stride_, int uv_stride_, unsigned int in
 Quad::Quad(int width, int height)
 {
     float vertices_[20] = {
-    -1.0f,  -1.0f, 0.0, 0.0, 1.0,
-     1.0f,  -1.0f, 0.0, 1.0, 1.0,
-     1.0f,   1.0f, 0.0, 1.0, 0.0,
-    -1.0f,   1.0f, 0.0, 0.0, 0.0
+    -1.0f,   1.0f, 0.0, 0.0, 1.0,
+     1.0f,   1.0f, 0.0, 1.0, 1.0,
+     1.0f,  -1.0f, 0.0, 1.0, 0.0,
+    -1.0f,  -1.0f, 0.0, 0.0, 0.0
     };
     unsigned int indices_[6] = {
     0,1,2,
@@ -118,13 +120,15 @@ void Quad::initialize(bool use_texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glBindTexture(GL_TEXTURE_2D, 0);
         std::cout << glGetError();
-        // Unbind the texture object
+        //Unbind the texture object
         //glBindTexture(GL_TEXTURE_2D, 0);
 
         //glUseProgram(shader);
         //std::cout << glGetError();
     }
     
+
+
 }
 void Quad::changeSize(float canvas_ratio, bool w_ratio)
 {
@@ -145,6 +149,69 @@ void Quad::changeSize(float canvas_ratio, bool w_ratio)
         vertices[i + 1] = ((vertices[i + 1] > 0) - (vertices[i + 1] < 0)) * height;
         std::cout << vertices[i] << " " << vertices[i + 1] << std::endl;
     }
+}
+void Quad::setTexture(const char* texture_path_)
+{
+    texture_path = texture_path_;
+}
+void Quad::setShader(unsigned int shader_)
+{
+    shader = shader_;
+}
+void Quad::calculateSSBB(StateHandler& state)
+{
+    glm::mat4 mvp = state.projection * state.view * model;
+
+    glm::vec4 ssVertex_1 = mvp * glm::vec4(vertices[0], vertices[1], vertices[2],1.0);
+    glm::vec4 ssVertex_2 = mvp * glm::vec4(vertices[10], vertices[11], vertices[12],1.0);
+    
+    glm::vec2 ssVertex_1xy = glm::vec2(ssVertex_1[0], ssVertex_1[1]);
+    glm::vec2 ssVertex_2xy = glm::vec2(ssVertex_2[0], ssVertex_2[1]);
+
+    glm::vec2 screenSpacePos_1 = ((ssVertex_1xy + glm::vec2(1.0f)) / 2.0f) * glm::vec2(state.w_width, state.w_height);
+    glm::vec2 screenSpacePos_2 = ((ssVertex_2xy + glm::vec2(1.0f)) / 2.0f) * glm::vec2(state.w_width, state.w_height);
+    /*std::cout << glm::to_string(screenSpacePos_1) << std::endl;
+    std::cout << glm::to_string(screenSpacePos_2) << std::endl;*/
+    screenSpacePos_1[0] = int(screenSpacePos_1[0]);
+    screenSpacePos_1[1] = int(state.w_height - screenSpacePos_1[1]);
+    screenSpacePos_2[0] = int(screenSpacePos_2[0]);
+    screenSpacePos_2[1] = int(state.w_height - screenSpacePos_2[1]);
+    ssbb = glm::mat2(screenSpacePos_1, screenSpacePos_2);
+    std::cout << glm::to_string(ssbb) << std::endl;
+}
+bool Quad::isInside(float posx, float posy)
+{
+    /*std::cout << posx << " " << posy << std::endl;
+    std::cout << ssbb[0][0]<<"," << ssbb[0][1] << " " << ssbb[1][0] << "," << ssbb[1][1] << std::endl;
+    std::cout << (posx > ssbb[0][0] && posx < ssbb[1][0] && posy> ssbb[0][1] && posy < ssbb[1][1]) << std::endl;*/
+    return posx > ssbb[0][0] && posx < ssbb[1][0] && posy> ssbb[0][1] && posy < ssbb[1][1];
+}
+Quad Quad::operator=(const Quad& q)
+{
+    for (int i = 0; i < 20; i++) {
+        this->vertices[i] = q.vertices[i];
+        if (i < 6)
+        {
+            this->indices[i] = q.indices[i];
+        }
+    }
+    this->position_stride = q.position_stride;
+    this->uv_stride = q.uv_stride;
+
+    this->texture_path = q.texture_path;
+    this->shader = q.shader;
+
+    this->x_dim = q.x_dim;
+    this->y_dim = q.y_dim;
+
+    this->vb = q.vb;
+    this->ib = q.ib;
+    this->vao = q.vao;
+    this->ssbb = q.ssbb;
+
+    this->model = q.model;
+    this->texture = q.texture;
+    return Quad();
 }
 void Quad::debug()
 {
@@ -198,7 +265,7 @@ void StateHandler::updVec(glm::vec2 vec, const char* vec_name)
     glUniform2fv(location, 1, glm::value_ptr(vec));
 }
 
-void UiHandler::renderUI(StateHandler& state,Quad& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
     ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -240,6 +307,7 @@ void UiHandler::renderUI(StateHandler& state,Quad& canvas, int& w_width, int& w_
     }
     if (ImGui::Button("Water", ImVec2(windowSize.x, 30)))
     {
+        state.sel_tool = 2;
     }
     if (ImGui::Button("Buildings", ImVec2(windowSize.x, 30)))
     {
@@ -257,10 +325,9 @@ void UiHandler::renderUI(StateHandler& state,Quad& canvas, int& w_width, int& w_
     {
         std::cout << w_width << " " << w_height << std::endl;
         std::cout << canvas_width << " " << canvas_height << std::endl;
-        canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
-        state.updMat(canvas.model, "model");
-        //resolution = (float)canvas_width / canvas_height;
-        //state.updFloat(resolution, "u_BgRes");
+        canvas.setSize(state, canvas_width, canvas_height);
+        /*canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
+        state.updMat(canvas.model, "model");*/
 
     }
     if (ImGui::Button("Reset"))
@@ -292,6 +359,9 @@ void UiHandler::renderUI(StateHandler& state,Quad& canvas, int& w_width, int& w_
             state.robin_panel_width = w_width;
             break;
         case 1:
+            terrainPanel(state, w_width, w_height, canvas_width, canvas_height, resolution);
+            break;
+        case 2:
             terrainPanel(state, w_width, w_height, canvas_width, canvas_height, resolution);
             break;
     }
@@ -432,3 +502,207 @@ void UiHandler::terrainPanel(StateHandler& state, int& w_width, int& w_height, i
 
     ImGui::End();
 }
+
+Canvas::Canvas(int width_, int height_)
+{
+    width = width_;
+    height = height_;
+    float vertices_[20] = {
+    -1.0f,   1.0f, 0.0, 0.0, 1.0,
+     1.0f,   1.0f, 0.0, 1.0, 1.0,
+     1.0f,  -1.0f, 0.0, 1.0, 0.0,
+    -1.0f,  -1.0f, 0.0, 0.0, 0.0
+    };
+    unsigned int indices_[6] = {
+    0,1,2,
+    2,3,0
+    };
+    int pos_stride_ = 5;
+    int uv_stride_ = 5;
+    for (int i = 0; i < 20; i++) {
+        vertices[i] = vertices_[i];
+        if (i < 6)
+        {
+            indices[i] = indices_[i];
+        }
+    }
+    position_stride = pos_stride_;
+    uv_stride = uv_stride_;
+    texture_path = "";
+    
+}
+
+void Canvas::addFrameBufferQuad(int width_, int height_, unsigned int shader_, const char* texture_path_)
+{
+    Quad frm_bffr(width_, height_);
+    frm_bffr.setTexture(texture_path_);
+    frm_bffr.initialize(false);
+    frm_bffr.debug();
+    frm_bffr.setShader(shader_);
+    
+    // Load the image data
+    
+    int channels;
+    int width, height;
+    unsigned char* imageData = stbi_load(texture_path_, &width, &height, &channels, 4);
+
+    if (imageData == nullptr) {
+        std::cout << stbi_failure_reason();
+        stbi_image_free(imageData);
+    }
+
+    canvas_rgba = imageData;
+
+    //unsigned int texture;
+    glGenTextures(1, &frm_bffr.texture);
+    glActiveTexture(GL_TEXTURE0);
+
+    // Bind the texture object
+    glBindTexture(GL_TEXTURE_2D, frm_bffr.texture);
+
+    // Upload the image data to the texture object
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    
+
+    // Specify the texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    frm_buffr = frm_bffr;
+}
+
+void Canvas::setSize(StateHandler& state, int width_, int height_)
+{
+    width = width_;
+    height = height_;
+    state.canvas_height = height_;
+    state.canvas_width = width_;
+    model = glm::scale(glm::mat4(1.0f), glm::vec3(width_, height_, 1.0f));
+    if (state.shader != shader) 
+    {
+        unsigned int curr_shader = state.shader;
+        state.attachShader(shader);
+        state.updMat(model, "model");
+        state.attachShader(curr_shader);
+        std::cout << "equal";
+    }
+    else
+    {
+        std::cout << "else";
+        state.updMat(model, "model");
+    }
+    
+    
+}
+
+void Canvas::setTexture(const char* texture_path_)
+{
+    int channels;
+    int width, height;
+    unsigned char* imageData = stbi_load(texture_path_, &width, &height, &channels, 4);
+
+    if (imageData == nullptr) {
+        std::cout << stbi_failure_reason();
+        stbi_image_free(imageData);
+    }
+    fb_width = width;
+    fb_height = height;
+    canvas_rgba = imageData;
+    //unsigned int texture;
+    glGenTextures(1, &fb_texture);
+    glActiveTexture(GL_TEXTURE0);
+
+    // Bind the texture object
+    glBindTexture(GL_TEXTURE_2D, fb_texture);
+
+    // Upload the image data to the texture object
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+
+
+    // Specify the texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    //texture_path = texture_path_;
+}
+
+void Painter::paint(float posx, float posy, Canvas& canvas,int tool_id)
+{
+    //std::cout << posx - canvas.ssbb[0][0] << "," << posy - canvas.ssbb[0][1] << std::endl;
+    if (canvas.isInside(posx,posy))
+    {
+        int abs_posx = (posx - canvas.ssbb[0][0]);
+        int abs_posy = canvas.fb_height - (posy - canvas.ssbb[0][1]);
+        int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
+
+        switch (tool_id)
+        {
+        case 1:
+            paintTerrain(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
+            break;
+        case 2:
+            paintWater(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
+            break;
+        }
+
+        // Bind the texture object
+        glBindTexture(GL_TEXTURE_2D, canvas.fb_texture);
+
+        // Upload the image data to the texture object
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
+    }
+    
+
+}
+
+void Painter::paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height)
+{
+    for (int i = -brush_size / 2; i < brush_size / 2; i++)
+    {
+        for (int j = -brush_size / 2; j < brush_size / 2; j++)
+        {
+            int index = (width * (abs_posy + j) + abs_posx + i) * 4;
+            if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size) && (index + 2 < width * height * 4)&&(index>0))
+            {
+                float hardness = 1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size;
+                //std::cout << hardness;
+                
+                
+                canvas_rgba[index] = 255 * hardness + canvas_rgba[index] * (1 - hardness);
+                canvas_rgba[index + 1] = 0;
+                canvas_rgba[index + 2] = 255 - canvas_rgba[index];
+
+                //canvas.canvas_rgba[index + 2] = 0;
+            }
+        }
+    }
+}
+void Painter::paintWater(unsigned char*& canvas_rgba, int abs_posx, int abs_posy, int width, int height)
+{
+    for (int i = -brush_size / 2; i < brush_size / 2; i++)
+    {
+        for (int j = -brush_size / 2; j < brush_size / 2; j++)
+        {
+            int index = (width * (abs_posy + j) + abs_posx + i) * 4;
+            if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size)&& (index + 2 < width * height * 4) && (index > 0))
+            {
+
+                float hardness = 1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size;
+                //std::cout << hardness;
+                
+                canvas_rgba[index + 2] = 255 * hardness + canvas_rgba[index + 2] * (1 - hardness);
+                canvas_rgba[index + 1] = 0;
+                canvas_rgba[index] = 255 - canvas_rgba[index + 2];
+                //canvas.canvas_rgba[index + 2] = 0;
+                
+            }
+        }
+    }
+}
+
+//void Painter::stamp(float posx, float posy, int width, int height)
+//{
+//
+//}

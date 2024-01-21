@@ -132,6 +132,12 @@ void VertexBuffer::unbind() const
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+VertexBuffer VertexBuffer::operator=(const VertexBuffer& vb)
+{
+    this->v_bufferID = vb.v_bufferID;
+    return VertexBuffer();
+}
+
 IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
     :indCount(count)
 {
@@ -166,4 +172,11 @@ void IndexBuffer::bind() const
 void IndexBuffer::unbind() const
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+IndexBuffer IndexBuffer::operator=(const IndexBuffer& ib)
+{
+    this->i_bufferID = ib.i_bufferID;
+    this->indCount = ib.indCount;
+    return IndexBuffer();
 }

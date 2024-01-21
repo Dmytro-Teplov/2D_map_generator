@@ -28,6 +28,8 @@ public:
 	void initialize(const void* data, unsigned int size);
 	void bind() const;
 	void unbind() const;
+
+	VertexBuffer operator=(const VertexBuffer& vb);
 };
 
 class IndexBuffer
@@ -46,5 +48,7 @@ public:
 	void unbind() const;
 
 	inline unsigned int getCount() const { return indCount; }
+
+	IndexBuffer operator=(const IndexBuffer& ib);
 };
 
