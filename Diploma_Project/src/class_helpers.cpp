@@ -684,7 +684,7 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
 
 void Painter::paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height)
 {
-    std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
+    //std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
     for (int i = -brush_size / 2; i < brush_size / 2; i++)
     {
         for (int j = -brush_size / 2; j < brush_size / 2; j++)
