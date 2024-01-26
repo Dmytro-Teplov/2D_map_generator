@@ -63,7 +63,6 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (canvas.isInside(state.last_x, state.last_y))
             {
                 state.brush_pressed = true;
-                std::cout << "inside canvas\n";
             }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
@@ -96,6 +95,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
     }
 
 }
+
 int main(void)
 {
     GLFWwindow* window;
@@ -180,6 +180,7 @@ int main(void)
     canvas.setTexture("res/assets/default_map.png");
     canvas.debug();
     canvas.setShader(terrain_shader);
+    
 
     Quad frm_buffr(w_width, w_height);
     //frm_buffr.setTexture("res/assets/default_map.png");
@@ -264,6 +265,14 @@ int main(void)
 
     Painter painter;
 
+    //HATE THIS
+    glfwGetWindowSize(window, &w_width, &w_height);
+    state.w_width = w_width;
+    state.w_height = w_height;
+    glViewport(0, 0, w_width, w_height);
+    glfwGetCursorPos(window, &state.curs_x, &state.curs_y);
+    canvas.calculateSSBB(state);
+
     while (!glfwWindowShouldClose(window))
     {
         /* Render here */
@@ -324,7 +333,8 @@ int main(void)
             {
                 glfwGetCursorPos(window, &x, &y);
                 painter.brush_size = state.brush_size;
-                painter.paint(x,y,canvas,state.sel_tool);
+                painter.brush_hardness = state.brush_hardness;
+                painter.paint(x,y,canvas,state);
             }
         }   
         

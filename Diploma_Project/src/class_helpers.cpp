@@ -485,19 +485,32 @@ void UiHandler::terrainPanel(StateHandler& state, int& w_width, int& w_height, i
             glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     }
 
-    sliderPosX = (windowSize.x - ImGui::CalcTextSize("Brush Size").x) * 0.5;
-    sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
+    //sliderPosX = (windowSize.x - ImGui::CalcTextSize("Brush Size").x) * 0.5;
+    //sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
 
-    ImGui::SetCursorPos(ImVec2(sliderPosX, 0));
-    ImGui::Text("Brush Size");
+    //ImGui::SetCursorPos(ImVec2(sliderPosX, 0));
+    //ImGui::Text("Brush Size");
 
-    // Calculate the position for the centered slider
-    sliderWidth = (3.f / 4.f) * windowSize.x; // Adjust the width as needed
-    sliderPosX = (windowSize.x - sliderWidth) * 0.5;
-    sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing();
-    ImVec2 curPos = ImGui::GetCursorPos();
-    ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
-    ImGui::SliderFloat("##", &state.brush_size, 0.f, 250.f);
+    //// Calculate the position for the centered slider
+    //sliderWidth = (3.f / 4.f) * windowSize.x; // Adjust the width as needed
+    //sliderPosX = (windowSize.x - sliderWidth) * 0.5;
+    //sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing();
+    //ImVec2 curPos = ImGui::GetCursorPos();
+    //ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
+    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
+
+    //sliderPosX = (windowSize.x - ImGui::CalcTextSize("Brush Hardness").x) * 0.5;
+    //curPos = ImGui::GetCursorPos();
+    //ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
+    //ImGui::Text("Brush Hardness");
+
+    //// Calculate the position for the centered slider
+    //sliderWidth = (3.f / 4.f) * windowSize.x; // Adjust the width as needed
+    //sliderPosX = (windowSize.x - sliderWidth) * 0.5;
+    //sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing();
+    //curPos = ImGui::GetCursorPos();
+    //ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
+    ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
 
 
     ImGui::End();
@@ -579,6 +592,18 @@ void Canvas::setSize(StateHandler& state, int width_, int height_)
     state.canvas_height = height_;
     state.canvas_width = width_;
     model = glm::scale(glm::mat4(1.0f), glm::vec3(width_, height_, 1.0f));
+
+
+    GLubyte* data = (GLubyte*)malloc(sizeof(GLubyte) * width * height * 4); // assuming 4 components per pixel
+
+    // get the texture data
+    glBindTexture(GL_TEXTURE_2D, fb_texture);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    canvas_rgba = (unsigned char*)data;
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas_rgba);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     if (state.shader != shader) 
     {
         unsigned int curr_shader = state.shader;
@@ -627,7 +652,7 @@ void Canvas::setTexture(const char* texture_path_)
     //texture_path = texture_path_;
 }
 
-void Painter::paint(float posx, float posy, Canvas& canvas,int tool_id)
+void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
 {
     //std::cout << posx - canvas.ssbb[0][0] << "," << posy - canvas.ssbb[0][1] << std::endl;
     if (canvas.isInside(posx,posy))
@@ -636,7 +661,7 @@ void Painter::paint(float posx, float posy, Canvas& canvas,int tool_id)
         int abs_posy = canvas.fb_height - (posy - canvas.ssbb[0][1]);
         int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
 
-        switch (tool_id)
+        switch (state.sel_tool)
         {
         case 1:
             paintTerrain(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
@@ -659,6 +684,7 @@ void Painter::paint(float posx, float posy, Canvas& canvas,int tool_id)
 
 void Painter::paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height)
 {
+    std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
     for (int i = -brush_size / 2; i < brush_size / 2; i++)
     {
         for (int j = -brush_size / 2; j < brush_size / 2; j++)
@@ -666,7 +692,7 @@ void Painter::paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_pos
             int index = (width * (abs_posy + j) + abs_posx + i) * 4;
             if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size) && (index + 2 < width * height * 4)&&(index>0))
             {
-                float hardness = 1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size;
+                float hardness = (1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size)*brush_hardness;
                 //std::cout << hardness;
                 
                 

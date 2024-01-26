@@ -41,6 +41,7 @@ public:
     int batman_panel_width = 100;
     int robin_panel_width = 100;
     float brush_size = 10;
+    float brush_hardness = 0.5;
     
     int canvas_width = 640;
     int canvas_height = 480;
@@ -129,7 +130,7 @@ public:
     float brush_size = 10;
     float brush_hardness = 0.5;
 
-    void paint(float posx, float posy, Canvas& canvas, int tool_id);
+    void paint(float posx, float posy, Canvas& canvas, StateHandler& state);
     void paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height);
     void paintWater(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height);
 };
