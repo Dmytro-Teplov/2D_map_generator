@@ -15,6 +15,8 @@ glm::vec3 sun = glm::vec3(1.0, 1.0, 1.0);
 int w_width, w_height;
 glm::mat4 relative_cursor = glm::mat4(1.0f);
 Canvas canvas(100, 100);
+float prev_zoom = 1.0;
+glm::mat4 default_view = state.view;
 void windowResizeHandler(int window_width, int window_height) {
     glViewport(0, 0, window_width, window_height);
 }
@@ -26,6 +28,9 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
         state.zoom = 0.1f;
     if (state.zoom > 25.0f)
         state.zoom = 25.0f;
+    state.view = glm::scale(default_view, glm::vec3(state.zoom, state.zoom, state.zoom));
+
+    canvas.calculateSSBB(state);
 }
 void mouse_callback(GLFWwindow* window, int button, int action, int mods)
 {
@@ -40,7 +45,6 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (state.last_x > state.batman_panel_width && state.last_x < state.robin_panel_width)
             {
                 state.mouse_pressed = true;
-
             }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
@@ -50,7 +54,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             glfwGetWindowSize(window, &w_width, &w_height);
             if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
                 state.mouse_pressed = false;
-                state.view = glm::translate(state.view, state.transform);
+                state.view = glm::translate(state.view, state.transform / glm::vec3(state.zoom));
                 canvas.calculateSSBB(state);
             }
         }
@@ -63,6 +67,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (canvas.isInside(state.last_x, state.last_y))
             {
                 state.brush_pressed = true;
+                std::cout << "inside";
             }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
@@ -88,8 +93,9 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             glfwGetWindowSize(window, &w_width, &w_height);
             if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
                 state.mouse_pressed = false;
-                state.view = glm::translate(state.view, state.transform);
+                state.view = glm::translate(state.view, state.transform / glm::vec3(state.zoom));
                 canvas.calculateSSBB(state);
+               
             }
         }
     }
@@ -111,10 +117,10 @@ int main(void)
     /* Create a windowed mode window and its OpenGL context */
     
     float canvas_aspect_ratio = 1.0;
-    int canvas_width = 640, canvas_height = 480;
+    int canvas_width = 1000, canvas_height = 500;
     window = glfwCreateWindow(1280, 720, "Magic Maps", NULL, NULL);
     glfwGetWindowSize(window, &w_width, &w_height);
-
+    
     if (!window)
     {
         glfwTerminate();
@@ -177,10 +183,10 @@ int main(void)
     
     canvas.initialize(false);
     //canvas.addFrameBufferQuad(w_width, w_height, heightmap_shader, "res/assets/default_map.png");
-    canvas.setTexture("res/assets/default_map.png");
+    canvas.createTexture(canvas_width,canvas_height);
     canvas.debug();
     canvas.setShader(terrain_shader);
-    
+
 
     Quad frm_buffr(w_width, w_height);
     //frm_buffr.setTexture("res/assets/default_map.png");
@@ -265,7 +271,7 @@ int main(void)
 
     Painter painter;
 
-    //HATE THIS
+    //HATE THIS - needed to enable correct painting at the start.
     glfwGetWindowSize(window, &w_width, &w_height);
     state.w_width = w_width;
     state.w_height = w_height;
@@ -298,9 +304,9 @@ int main(void)
         state.attachFramebuffer(0);
         state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
         state.updMat(state.projection, "projection");
-        state.transform = glm::vec3(state.zoom);
-        view_relative = glm::scale(state.view, glm::vec3(state.zoom, state.zoom, state.zoom));
-        state.updMat(view_relative, "view");
+        //state.transform = glm::vec3(state.zoom);
+        view_relative = state.view;
+        //state.updMat(state.view, "view");
         if (state.mouse_pressed)
         {
             //state.view = view_relative;
@@ -332,6 +338,7 @@ int main(void)
             if (state.brush_pressed)
             {
                 glfwGetCursorPos(window, &x, &y);
+
                 painter.brush_size = state.brush_size;
                 painter.brush_hardness = state.brush_hardness;
                 painter.paint(x,y,canvas,state);

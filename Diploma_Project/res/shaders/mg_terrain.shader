@@ -41,18 +41,34 @@ precision mediump float;
 
 void main()
 {   
-    vec4 text = texture2D( texture1, texcoord);
+    vec4 text = texture2D(texture1, texcoord);
+    
+    ////blend water and terrain
+    //if (text.a < 0.45)//water
+    //    color = mix(vec4(0.2, 0.5, 0.5, 1.0), vec4(0.9, 0.8, 0.7, 1.0), text.a / 0.45);
+    //if (text.a >= 0.45)//send shore
+    //    color = mix(vec4(0.9, 0.8, 0.7, 1.0), vec4(0.7, 0.6, 0.5, 1.0), (text.a - 0.45) / 0.15);
+    ////if (text.a >= 0.57)//outline
+    ////    color = vec4(0.2, 0.2, 0.2, 1.0);
+    //if (text.a > 0.6)//terrain
+    //    color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (text.a - 0.6) / 0.35);
+    //if (text.a > 0.95)//rocky mountains
+    //    color = vec4(0.9, 0.9, 0.9, 1.0);
+    //int outlineWidth = 10;
     
     //blend water and terrain
-    if (text.a < 0.45)//water
-        color = mix(vec4(0.2, 0.5, 0.5, 1.0), vec4(0.9, 0.8, 0.7, 1.0), text.a / 0.45);
-    if (text.a >= 0.45)//send shore
-        color = mix(vec4(0.9, 0.8, 0.7, 1.0), vec4(0.7, 0.6, 0.5, 1.0), (text.a - 0.45) / 0.15);
+    if (text.a <= 0.6)//water
+        color = vec4(0.2, 0.5, 0.5, 1.0);
     if (text.a > 0.6)//terrain
-        color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (text.a - 0.6) / 0.35);
-    if (text.a > 0.95)//rocky mountains
-        color = vec4(0.9, 0.9, 0.9, 1.0);
+        color = vec4(0.5, 0.6, 0.3, 1.0);
+
+    int outlineWidth = 10;
     
+    
+    // apply an outline by checking the neighboring pixels
+    
+    
+
     //color = vec4(1.0);
     //color = vec4(text.a);
 };

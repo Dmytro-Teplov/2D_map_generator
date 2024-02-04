@@ -181,10 +181,14 @@ void Quad::calculateSSBB(StateHandler& state)
 }
 bool Quad::isInside(float posx, float posy)
 {
+
     /*std::cout << posx << " " << posy << std::endl;
     std::cout << ssbb[0][0]<<"," << ssbb[0][1] << " " << ssbb[1][0] << "," << ssbb[1][1] << std::endl;
-    std::cout << (posx > ssbb[0][0] && posx < ssbb[1][0] && posy> ssbb[0][1] && posy < ssbb[1][1]) << std::endl;*/
+    std::cout << (posx > ssbb[0][0] && posx < ssbb[1][0] && posy> ssbb[0][1] && posy < ssbb[1][1]) << std::endl;
+    std::cout << "-----------" << std::endl;*/
+
     return posx > ssbb[0][0] && posx < ssbb[1][0] && posy> ssbb[0][1] && posy < ssbb[1][1];
+
 }
 Quad Quad::operator=(const Quad& q)
 {
@@ -543,6 +547,8 @@ Canvas::Canvas(int width_, int height_)
     uv_stride = uv_stride_;
     texture_path = "";
     
+    fb_width = width_;
+    fb_height = height_;
 }
 
 void Canvas::addFrameBufferQuad(int width_, int height_, unsigned int shader_, const char* texture_path_)
@@ -652,18 +658,56 @@ void Canvas::setTexture(const char* texture_path_)
     //texture_path = texture_path_;
 }
 
+void Canvas::createTexture(int width,int height)
+{
+    int channels=4;
+    //int width, height;
+    unsigned char* imageData = (unsigned char*)malloc(width * height * channels);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int index = (y * width + x) * channels;
+            imageData[index + 0] = 0; // Red
+            imageData[index + 1] = 0;   // Green
+            imageData[index + 2] = 255;   // Blue
+            imageData[index + 3] = 255;   // Blue
+        }
+    }
+    fb_width = width;
+    fb_height = height;
+    canvas_rgba = imageData;
+    //unsigned int texture;
+    glGenTextures(1, &fb_texture);
+    glActiveTexture(GL_TEXTURE0);
+
+    // Bind the texture object
+    glBindTexture(GL_TEXTURE_2D, fb_texture);
+
+    // Upload the image data to the texture object
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+
+
+    // Specify the texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    //texture_path = texture_path_;
+}
+
 void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
 {
     //std::cout << posx - canvas.ssbb[0][0] << "," << posy - canvas.ssbb[0][1] << std::endl;
     if (canvas.isInside(posx,posy))
     {
-        int abs_posx = (posx - canvas.ssbb[0][0]);
-        int abs_posy = canvas.fb_height - (posy - canvas.ssbb[0][1]);
+        int abs_posx = (posx - canvas.ssbb[0][0])/state.zoom;
+        int abs_posy = (canvas.fb_height - (posy - canvas.ssbb[0][1]) / state.zoom);
         int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
-
+        //std::cout << canvas.fb_width << " " << canvas.fb_height << std::endl;
+        brush_size = brush_size / state.zoom;
+        //std::cout << canvas.ssbb[0][0] << " " << canvas.ssbb[0][1] << std::endl;
         switch (state.sel_tool)
         {
         case 1:
+
             paintTerrain(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
             break;
         case 2:
@@ -715,7 +759,7 @@ void Painter::paintWater(unsigned char*& canvas_rgba, int abs_posx, int abs_posy
             if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size)&& (index + 2 < width * height * 4) && (index > 0))
             {
 
-                float hardness = 1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size;
+                float hardness = (1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size) * brush_hardness;
                 //std::cout << hardness;
                 
                 canvas_rgba[index + 2] = 255 * hardness + canvas_rgba[index + 2] * (1 - hardness);

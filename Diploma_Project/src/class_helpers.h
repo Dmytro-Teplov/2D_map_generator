@@ -43,8 +43,8 @@ public:
     float brush_size = 10;
     float brush_hardness = 0.5;
     
-    int canvas_width = 640;
-    int canvas_height = 480;
+    int canvas_width = 1280;
+    int canvas_height = 720;
 
     int w_width = 640;
     int w_height = 480;
@@ -120,6 +120,7 @@ public:
     void addFrameBufferQuad(int width, int height, unsigned int shader_, const char* texture_path_);
     void setSize(StateHandler& state, int width_, int height_);
     void setTexture(const char* texture_path_);
+    void createTexture(int width, int height);
 };
 class Painter
 {
