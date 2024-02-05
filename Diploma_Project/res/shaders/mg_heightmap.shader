@@ -30,6 +30,9 @@ uniform sampler2D texture1;
 
 uniform vec4 u_Color;
 uniform float u_BgRes;
+uniform float u_complexity;
+uniform float u_scale1;
+uniform float u_scale2;
 
 
 #ifdef GL_ES
@@ -137,7 +140,7 @@ float fBm(vec2 p)
 {
     float f = 0.0;
     float w = 0.5;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < u_complexity; i++)
     {
         f += w * perlin_noise(p);
         p *= 2.0;
@@ -165,14 +168,14 @@ void main()
     
     //get the noise
     vec4 water_noise = vec4(vec3(fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_Color.x)) + 0.5f, 1.f) * proxy.z;
-    float terrain_noise_small = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * 4.0) ;//figure out why whole noise is less than 0.5
-    float terrain_noise_big = fBm(vec2(texcoord.x * u_BgRes, texcoord.y));
-    float terrain_noise_small2 = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * 2.0);
+    float terrain_noise_small = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale1); //figure out why whole noise is less than 0.5
+    float terrain_noise_big = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale2);
+    //float terrain_noise_small2 = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * 2.0);
     
     //initialize the water and terrain mask
     float terrain_mask = clamp((abs(terrain_noise_small - 0.5) + terrain_noise_big) / 2 + 0.5, 0.5, 1.0) * (1 - proxy.z);
     float water_mask = clamp((terrain_noise_small + terrain_noise_big*4)/10, 0.0, 0.5) * proxy.z;
-    terrain_mask = clamp(terrain_mask + water_mask, 0.0, 1.0);
+    //terrain_mask = clamp(terrain_mask + water_mask, 0.0, 1.0);
 
     //blend water and terrain
     //if (terrain_mask < 0.45)//water
@@ -185,6 +188,8 @@ void main()
     //    color = vec4(0.9, 0.9, 0.9, 1.0);
     color.rgb = vec3(terrain_mask);
     color.a = terrain_mask;
+    color.r = terrain_mask;
+    color.b = water_mask;
      //blend water and terrain
     //color = vec4(terrain_mask);
     //color = vec4(1.0);

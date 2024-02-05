@@ -63,6 +63,7 @@ public:
     void updFloat(float num, const char* name);
     void updVec(glm::vec3 vec, const char* vec_name);
     void updVec(glm::vec2 vec, const char* vec_name);
+    void updVec(glm::vec4 vec, const char* vec_name);
     
 };
 
@@ -115,6 +116,16 @@ public:
     int fb_width = 480;
     int fb_height = 640;
     Quad frm_buffr;
+    int noise_compl = 6;
+    float noise_1_scale = 4.0;
+    float noise_2_scale = 1.0;
+    glm::vec4 terrain_c = glm::vec4(0.0f,1.0f,0.0f,1.0f);
+    glm::vec4 water_c = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    glm::vec4 outline_c = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    float outline_thickness = 1.0;
+    float outline_hardness = 1.0;
+    
+
 
     Canvas(int width, int height);
     void addFrameBufferQuad(int width, int height, unsigned int shader_, const char* texture_path_);
@@ -145,8 +156,11 @@ class UiHandler
     float sliderPosY = 0;
     float sliderWidth = 100;
 public:
+
     void renderUI(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
     void setCustomStyle();
     void setCustomFont(const char regular[], const char bold[]);
-    void terrainPanel(StateHandler& state, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void middleLabel(const char* text);
+    void terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
 };

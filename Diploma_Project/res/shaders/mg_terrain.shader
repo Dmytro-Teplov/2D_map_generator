@@ -29,15 +29,29 @@ uniform sampler2D texture1;
 
 uniform vec4 u_Color;
 uniform vec3 u_sun_pos;
-uniform float u_width;
-uniform float u_height;
+uniform float u_outline_thickness;
+uniform float u_outline_hardness;
 uniform float u_BgRes;
+uniform vec4 u_terrain_color;
+uniform vec4 u_water_color;
+uniform vec4 u_outline_color;
 
 
 #ifdef GL_ES
 precision mediump float;
 #endif
 
+vec4 sample_terrain(vec2 texcoord)
+{
+    vec4 t = texture2D(texture1, texcoord);
+    vec4 res;
+    float terrain_mask = clamp(t.r + t.b, 0.0, 1.0);
+    if (terrain_mask <= 0.6)
+        res = vec4(0.0, 0.0, 0.0, 1.0);
+    if (terrain_mask > 0.6)
+        res = vec4(1.0, 1.0, 1.0, 1.0);
+    return res;
+}
 
 void main()
 {   
@@ -57,13 +71,34 @@ void main()
     //int outlineWidth = 10;
     
     //blend water and terrain
-    if (text.a <= 0.6)//water
-        color = vec4(0.2, 0.5, 0.5, 1.0);
-    if (text.a > 0.6)//terrain
-        color = vec4(0.5, 0.6, 0.3, 1.0);
-
-    int outlineWidth = 10;
+    float terrain_mask = clamp(text.r + text.b, 0.0, 1.0);
+    if (terrain_mask <= 0.6)//water
+        color = u_water_color;
+    if (terrain_mask > 0.6)//terrain
+        color = u_terrain_color;
+    //color = mix(u_water_color, u_terrain_color, text.r);
+    float outlineWidth = u_outline_thickness / 512;
+    //color = sample_terrain(texcoord);
+    // check the neighboring pixels
     
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            vec2 offset = vec2(x, y*u_BgRes) * outlineWidth;
+            vec4 neighborColor = sample_terrain(texcoord + offset);
+            vec4 currColor = sample_terrain(texcoord);
+            if (neighborColor.r == 1.0f && currColor.r<0.5f)
+            {
+                color = u_outline_color;
+                break;
+            }
+
+        }
+    }
+
+   
+   
     
     // apply an outline by checking the neighboring pixels
     

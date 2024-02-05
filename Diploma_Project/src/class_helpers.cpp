@@ -269,6 +269,12 @@ void StateHandler::updVec(glm::vec2 vec, const char* vec_name)
     glUniform2fv(location, 1, glm::value_ptr(vec));
 }
 
+void StateHandler::updVec(glm::vec4 vec, const char* vec_name)
+{
+    int location = glGetUniformLocation(shader, vec_name);
+    glUniform4fv(location, 1, glm::value_ptr(vec));
+}
+
 void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
     ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
@@ -289,22 +295,13 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& 
         if(state.sel_tool != 0)
             glfwSetInputMode(state.window, GLFW_CURSOR,GLFW_CURSOR_HIDDEN);
     }
-
-
-    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-    sliderPosX = (windowSize.x - ImGui::CalcTextSize("Maps Generator").x) * 0.5;
-    ImGui::SetCursorPos(ImVec2(sliderPosX, 0));
-    ImGui::Text("Maps Generator");
-    ImGui::PopFont();
-   
+    middleLabel("Maps Generator");
     if (ImGui::Button("Move Tool",ImVec2(windowSize.x, 30)))//bad constants meh
     {
         state.sel_tool = 0;
     }
-    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-    ImGui::SetCursorPos(ImVec2((contentRegionAvail.x - ImGui::CalcTextSize("Brushes").x) * 0.5, ImGui::GetCursorPos().y));
-    ImGui::Text("Brushes");
-    ImGui::PopFont();
+    middleLabel("Brushes");
+
     if (ImGui::Button("Terrain", ImVec2(windowSize.x, 30)))
     {
         state.sel_tool = 1;
@@ -319,10 +316,7 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& 
     if (ImGui::Button("Flora", ImVec2(windowSize.x, 30)))
     {
     }
-    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-    ImGui::SetCursorPos(ImVec2((windowSize.x - ImGui::CalcTextSize("Canvas").x) * 0.5, ImGui::GetCursorPos().y));
-    ImGui::Text("Canvas");
-    ImGui::PopFont();
+    middleLabel("Canvas");
     ImGui::InputInt("canvas width", &canvas_width);
     ImGui::InputInt("canvas height", &canvas_height);
     if (ImGui::Button("Change the size"))
@@ -343,6 +337,12 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& 
         state.updMat(state.projection, "projection");
 
     }
+
+    middleLabel("Settings");
+    ImGui::InputInt("Noise Complexity", &canvas.noise_compl);
+    ImGui::InputFloat("Noise 1 Scale", &canvas.noise_1_scale);
+    ImGui::InputFloat("Noise 2 Scale", &canvas.noise_2_scale);
+
     sliderPosX = (windowSize.x - ImGui::CalcTextSize("Zoom").x) * 0.5;
     sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
     
@@ -363,10 +363,10 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& 
             state.robin_panel_width = w_width;
             break;
         case 1:
-            terrainPanel(state, w_width, w_height, canvas_width, canvas_height, resolution);
+            terrainPanel(state,canvas, w_width, w_height, canvas_width, canvas_height, resolution);
             break;
         case 2:
-            terrainPanel(state, w_width, w_height, canvas_width, canvas_height, resolution);
+            waterPanel(state,canvas, w_width, w_height, canvas_width, canvas_height, resolution);
             break;
     }
     ImGui::Render();
@@ -471,7 +471,17 @@ void UiHandler::setCustomFont(const char regular[], const char bold[])
     io.FontDefault = io.Fonts->Fonts.front();
 }
 
-void UiHandler::terrainPanel(StateHandler& state, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::middleLabel(const char* text)
+{
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImVec2 contentRegionAvail = ImGui::GetContentRegionAvail();
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
+    ImGui::SetCursorPos(ImVec2((windowSize.x - ImGui::CalcTextSize(text).x) * 0.5, ImGui::GetCursorPos().y));
+    ImGui::Text(text);
+    ImGui::PopFont();
+}
+
+void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
     ImGui::Begin("Terrain Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -489,34 +499,70 @@ void UiHandler::terrainPanel(StateHandler& state, int& w_width, int& w_height, i
             glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     }
 
-    //sliderPosX = (windowSize.x - ImGui::CalcTextSize("Brush Size").x) * 0.5;
-    //sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
-
-    //ImGui::SetCursorPos(ImVec2(sliderPosX, 0));
-    //ImGui::Text("Brush Size");
-
-    //// Calculate the position for the centered slider
-    //sliderWidth = (3.f / 4.f) * windowSize.x; // Adjust the width as needed
-    //sliderPosX = (windowSize.x - sliderWidth) * 0.5;
-    //sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing();
-    //ImVec2 curPos = ImGui::GetCursorPos();
-    //ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
+    middleLabel("Terrain Brush");
     ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
 
-    //sliderPosX = (windowSize.x - ImGui::CalcTextSize("Brush Hardness").x) * 0.5;
-    //curPos = ImGui::GetCursorPos();
-    //ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
-    //ImGui::Text("Brush Hardness");
-
-    //// Calculate the position for the centered slider
-    //sliderWidth = (3.f / 4.f) * windowSize.x; // Adjust the width as needed
-    //sliderPosX = (windowSize.x - sliderWidth) * 0.5;
-    //sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing();
-    //curPos = ImGui::GetCursorPos();
-    //ImGui::SetCursorPos(ImVec2(sliderPosX, curPos.y));
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
+    middleLabel("Terrain Settings");
+    static float color[4] = { 0.84f,0.76f,0.67f,1.0f };
+    static float color2[4] = { 0.84f,0.76f,0.67f,1.0f };
+    static float color3[4] = { 0.84f,0.76f,0.67f,1.0f };
+    ImGui::ColorEdit4("Color", color);
+    static bool is_gradient = false;
+    static bool outline = false;
+    ImGui::Checkbox("Gradient", &is_gradient);
+    if (is_gradient)
+    {
+        ImGui::ColorEdit4("Second Color", color2);
+    }
+    canvas.terrain_c = glm::vec4(color[0], color[1], color[2], color[3]);
+    //std::cout << glm::to_string(canvas.terrain_c) << std::endl;
+    //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
+    ImGui::Checkbox("Outline", &outline);
+    if (outline)
+    {
+        ImGui::ColorEdit4("Outline Color", color3);
+        ImGui::SliderFloat("Outline Thickness", &canvas.outline_thickness, 0.f, 10.f);
+        ImGui::SliderFloat("Outline Hardness", &canvas.outline_hardness, 0.f, 1.f);
+    }
+    canvas.outline_c = glm::vec4(color3[0], color3[1], color3[2], color3[3]);
+    ImGui::End();
+}
+void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+{
+    ImGui::Begin("Water Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
+    ImGui::SetWindowPos(ImVec2(w_width - windowSize.x, 0));
+    state.robin_panel_width = w_width - windowSize.x;
+    if (ImGui::IsWindowHovered())
+    {
+        state.panel_hovered = true;
+        glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    else
+    {
+        if (!state.panel_hovered && state.sel_tool != 0)
+            glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
 
+    middleLabel("Water Brush");
+    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
 
+    ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
+    middleLabel("Water Settings");
+    static float color[4] = { 0.66f,0.76f,0.85f,1.0f };
+    ImGui::ColorEdit4("Color", color);
+    static bool is_gradient = false;
+    ImGui::Checkbox("Gradient", &is_gradient);
+    if (is_gradient)
+    {
+        static float color2[4] = { 0.66f,0.76f,0.85f,1.0f };
+        ImGui::ColorEdit4("Second Color", color2);
+    }
+    canvas.water_c = glm::vec4(color[0], color[1], color[2], color[3]);
+    //std::cout << glm::to_string(canvas.water_c) << std::endl;
+    //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::End();
 }
 

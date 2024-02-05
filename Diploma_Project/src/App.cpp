@@ -297,14 +297,24 @@ int main(void)
         glBindTexture(GL_TEXTURE_2D, heightmap);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         state.attachFramebuffer(fb);
+        //updating terrain generation settings
+        state.updFloat(canvas.noise_compl, "u_complexity");
+        state.updFloat(canvas.noise_1_scale, "u_scale1");
+        state.updFloat(canvas.noise_2_scale, "u_scale2");
         frm_buffr.draw();
+        
 
         //CANVAS DRAWING 
         state.attachShader(terrain_shader);
         state.attachFramebuffer(0);
         state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
         state.updMat(state.projection, "projection");
-        //state.transform = glm::vec3(state.zoom);
+        state.updVec(canvas.terrain_c,"u_terrain_color");
+        state.updVec(canvas.water_c,"u_water_color");
+        state.updVec(canvas.outline_c,"u_outline_color");
+        state.updFloat(canvas.outline_thickness,"u_outline_thickness");
+        state.updFloat(canvas.outline_hardness,"u_outline_hardness");
+
         view_relative = state.view;
         //state.updMat(state.view, "view");
         if (state.mouse_pressed)
