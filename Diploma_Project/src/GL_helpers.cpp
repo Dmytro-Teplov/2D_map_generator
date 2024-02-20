@@ -1,7 +1,19 @@
 #include "GL_helpers.h"
 #include <GL/glew.h>
 
-#define ASSERT(x) if(!(x)) __debugbreak();
+#include <cassert>
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+    // Windows-specific debugging mechanism
+    #define DEBUG_BREAK __debugbreak()
+#else
+    // Use assert for other operating systems
+    #define DEBUG_BREAK assert(false)
+#endif
+
+// Usage:
+#define ASSERT(x) if(!(x)) DEBUG_BREAK;
+
 #define GLCall(x) GLClearError();\
     x;\
     ASSERT(GLLogCall(#x,__FILE__,__LINE__))

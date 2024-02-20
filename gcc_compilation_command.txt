@@ -1,0 +1,26 @@
+  
+g++ -std=c++17 \
+    -o app \
+    -IDependencies/imgui \
+    -IDiploma_Project/src \
+    -IDependencies/GLFW/include \
+    -IDependencies/GLEW/include \
+    -IDependencies/stb \
+    -IDependencies/glm \
+    Diploma_Project/src/App.cpp \
+    Diploma_Project/src/class_helpers.cpp \
+    Diploma_Project/src/GL_helpers.cpp \
+    Diploma_Project/res/imgui/imgui.cpp \
+    Diploma_Project/res/imgui/imgui_demo.cpp \
+    Diploma_Project/res/imgui/imgui_draw.cpp \
+    Diploma_Project/res/imgui/imgui_tables.cpp \
+    Diploma_Project/res/imgui/imgui_widgets.cpp \
+    Diploma_Project/res/imgui/backends/imgui_impl_glfw.cpp \
+    Diploma_Project/res/imgui/backends/imgui_impl_opengl3.cpp \
+    -LDependencies/GLFW/LinuxLibs \
+    -LDependencies/GLEW/lib/LinuxLibs \
+    -lglfw3 \
+    -lGLEW \
+    -lGL 
+
+
