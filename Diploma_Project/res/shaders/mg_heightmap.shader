@@ -190,6 +190,8 @@ void main()
     color.a = terrain_mask;
     color.r = terrain_mask;
     color.b = water_mask;
+    color.g = terrain_noise_big;
+    color.a = terrain_noise_small;
      //blend water and terrain
     //color = vec4(terrain_mask);
     //color = vec4(1.0);

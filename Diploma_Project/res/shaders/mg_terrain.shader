@@ -35,6 +35,7 @@ uniform float u_BgRes;
 uniform vec4 u_terrain_color;
 uniform vec4 u_water_color;
 uniform vec4 u_outline_color;
+uniform bool u_use_outline;
 
 
 #ifdef GL_ES
@@ -46,9 +47,9 @@ vec4 sample_terrain(vec2 texcoord)
     vec4 t = texture2D(texture1, texcoord);
     vec4 res;
     float terrain_mask = clamp(t.r + t.b, 0.0, 1.0);
-    if (terrain_mask <= 0.6)
+    if (terrain_mask <= 0.5)
         res = vec4(0.0, 0.0, 0.0, 1.0);
-    if (terrain_mask > 0.6)
+    if (terrain_mask > 0.5)
         res = vec4(1.0, 1.0, 1.0, 1.0);
     return res;
 }
@@ -72,38 +73,34 @@ void main()
     
     //blend water and terrain
     float terrain_mask = clamp(text.r + text.b, 0.0, 1.0);
-    if (terrain_mask <= 0.6)//water
+    if (terrain_mask <= 0.5)//water
         color = u_water_color;
-    if (terrain_mask > 0.6)//terrain
+
+    if (terrain_mask > 0.25 && terrain_mask < 0.3 && (text.g > 0.05 || text.a > 0.15))
+        color =  vec4(0.9, 0.9, 0.9, 1.0);
+    
+    if (terrain_mask > 0.5)//terrain
         color = u_terrain_color;
     //color = mix(u_water_color, u_terrain_color, text.r);
-    float outlineWidth = u_outline_thickness / 512;
-    //color = sample_terrain(texcoord);
-    // check the neighboring pixels
-    
-    for (int x = -1; x <= 1; ++x)
+    if (u_use_outline)
     {
-        for (int y = -1; y <= 1; ++y)
-        {
-            vec2 offset = vec2(x, y*u_BgRes) * outlineWidth;
-            vec4 neighborColor = sample_terrain(texcoord + offset);
-            vec4 currColor = sample_terrain(texcoord);
-            if (neighborColor.r == 1.0f && currColor.r<0.5f)
-            {
-                color = u_outline_color;
-                break;
-            }
+        float outlineWidth = u_outline_thickness / 512;
 
+        for (int x = -1; x <= 1; ++x)
+        {
+            for (int y = -1; y <= 1; ++y)
+            {
+                vec2 offset = vec2(x, y * u_BgRes) * outlineWidth;
+                vec4 neighborColor = sample_terrain(texcoord + offset);
+                vec4 currColor = sample_terrain(texcoord);
+                if (neighborColor.r == 1.0f && currColor.r < 0.5f)
+                {
+                    color = u_outline_color;
+                    break;
+                }
+
+            }
         }
     }
-
-   
-   
     
-    // apply an outline by checking the neighboring pixels
-    
-    
-
-    //color = vec4(1.0);
-    //color = vec4(text.a);
 };

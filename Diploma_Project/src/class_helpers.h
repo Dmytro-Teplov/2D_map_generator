@@ -11,7 +11,9 @@
 #include <string>
 #include <filesystem>
 #include "GL_helpers.h"
-
+//#include "nfd.h"
+//#include <stdio.h>
+//#include <stdlib.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -48,6 +50,11 @@ public:
 
     int w_width = 640;
     int w_height = 480;
+
+    //if set to true next rendering will happen into framebuffer and saved into texture.
+    bool save = false;
+
+    float density_1 = 1.0;
 
     glm::vec3 transform = glm::vec3(0.0f, 0.0f, 0.0f);
     //glm::mat4 model = glm::mat4(1.0f);//for future add this to the quad class
@@ -106,6 +113,7 @@ public:
     bool isInside(float posx, float posy);
     Quad operator=(const Quad& q);
 };
+
 class Canvas: public Quad
 {
 public:
@@ -119,12 +127,12 @@ public:
     int noise_compl = 6;
     float noise_1_scale = 4.0;
     float noise_2_scale = 1.0;
-    glm::vec4 terrain_c = glm::vec4(0.0f,1.0f,0.0f,1.0f);
-    glm::vec4 water_c = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    glm::vec4 terrain_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
+    glm::vec4 water_c = glm::vec4(0.66f, 0.76f, 0.85f, 1.0f);
     glm::vec4 outline_c = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     float outline_thickness = 1.0;
     float outline_hardness = 1.0;
-    
+    bool use_outline = false;
 
 
     Canvas(int width, int height);
@@ -133,6 +141,7 @@ public:
     void setTexture(const char* texture_path_);
     void createTexture(int width, int height);
 };
+
 class Painter
 {
     //Canvas canvas;

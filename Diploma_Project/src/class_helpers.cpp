@@ -177,7 +177,7 @@ void Quad::calculateSSBB(StateHandler& state)
     screenSpacePos_2[0] = int(screenSpacePos_2[0]);
     screenSpacePos_2[1] = int(state.w_height - screenSpacePos_2[1]);
     ssbb = glm::mat2(screenSpacePos_1, screenSpacePos_2);
-    std::cout << glm::to_string(ssbb) << std::endl;
+    //std::cout << glm::to_string(ssbb) << std::endl;
 }
 bool Quad::isInside(float posx, float posy)
 {
@@ -321,9 +321,9 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& 
     ImGui::InputInt("canvas height", &canvas_height);
     if (ImGui::Button("Change the size"))
     {
-        std::cout << w_width << " " << w_height << std::endl;
+        /*std::cout << w_width << " " << w_height << std::endl;
         std::cout << canvas_width << " " << canvas_height << std::endl;
-        canvas.setSize(state, canvas_width, canvas_height);
+        canvas.setSize(state, canvas_width, canvas_height);*/
         /*canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
         state.updMat(canvas.model, "model");*/
 
@@ -337,11 +337,32 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& 
         state.updMat(state.projection, "projection");
 
     }
-
+    
     middleLabel("Settings");
     ImGui::InputInt("Noise Complexity", &canvas.noise_compl);
     ImGui::InputFloat("Noise 1 Scale", &canvas.noise_1_scale);
     ImGui::InputFloat("Noise 2 Scale", &canvas.noise_2_scale);
+    ImGui::SliderFloat("Town density", &state.density_1,0.1f,10.0f);
+
+    middleLabel("Export");
+    if (ImGui::Button("Save into PNG", ImVec2(windowSize.x, 30)))
+    {
+        /*nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
+
+        if (result == NFD_OKAY) {
+            puts("Success!");
+            puts(outPath);
+            free(outPath);
+        }
+        else if (result == NFD_CANCEL) {
+            puts("User pressed cancel.");
+        }
+        else {
+            printf("Error: %s\n", NFD_GetError());
+        }*/
+        state.save = true;
+    }
 
     sliderPosX = (windowSize.x - ImGui::CalcTextSize("Zoom").x) * 0.5;
     sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
@@ -526,6 +547,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, 
         ImGui::SliderFloat("Outline Hardness", &canvas.outline_hardness, 0.f, 1.f);
     }
     canvas.outline_c = glm::vec4(color3[0], color3[1], color3[2], color3[3]);
+    canvas.use_outline = outline;
     ImGui::End();
 }
 void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)

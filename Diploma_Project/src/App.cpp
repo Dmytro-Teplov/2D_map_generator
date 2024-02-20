@@ -67,7 +67,6 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (canvas.isInside(state.last_x, state.last_y))
             {
                 state.brush_pressed = true;
-                std::cout << "inside";
             }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
@@ -306,7 +305,7 @@ int main(void)
 
         //CANVAS DRAWING 
         state.attachShader(terrain_shader);
-        state.attachFramebuffer(0);
+        
         state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
         state.updMat(state.projection, "projection");
         state.updVec(canvas.terrain_c,"u_terrain_color");
@@ -314,7 +313,15 @@ int main(void)
         state.updVec(canvas.outline_c,"u_outline_color");
         state.updFloat(canvas.outline_thickness,"u_outline_thickness");
         state.updFloat(canvas.outline_hardness,"u_outline_hardness");
+        state.updFloat(canvas.use_outline,"u_use_outline");
 
+        if (state.save)
+        {
+            state.save = false;
+
+        }
+
+        state.attachFramebuffer(0);
         view_relative = state.view;
         //state.updMat(state.view, "view");
         if (state.mouse_pressed)
