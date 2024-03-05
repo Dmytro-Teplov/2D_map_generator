@@ -31,15 +31,6 @@
     <ClCompile Include="src\GL_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="res\imgui\backends\imgui_impl_glfw.h" />
-    <ClInclude Include="res\imgui\backends\imgui_impl_opengl3.h" />
-    <ClInclude Include="res\imgui\backends\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="res\imgui\imconfig.h" />
-    <ClInclude Include="res\imgui\imgui.h" />
-    <ClInclude Include="res\imgui\imgui_internal.h" />
-    <ClInclude Include="res\imgui\imstb_rectpack.h" />
-    <ClInclude Include="res\imgui\imstb_textedit.h" />
-    <ClInclude Include="res\imgui\imstb_truetype.h" />
     <ClInclude Include="src\GL_helpers.h" />
     <ClInclude Include="src\class_helpers.h" />
   </ItemGroup>
@@ -101,14 +92,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\imgui;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\GLEW\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\imgui;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\GLEW\include;$(SolutionDir)Dependencies\nfd;$(SolutionDir)Dependencies\mpds</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\GLEW\lib\Release\Win32;$(SolutionDir)Dependencies\GLFW\lib-vc2022;$(SolutionDir)Diploma_Project\src</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glew32s.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalDependencies>glew32s.lib;$(CoreLibraryDependencies);$(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -119,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\imgui;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\GLEW\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\imgui;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\GLEW\include;$(SolutionDir)Dependencies\nfd;$(SolutionDir)Dependencies\mpds</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

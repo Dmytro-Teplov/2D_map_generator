@@ -17,6 +17,7 @@
 #define GLCall(x) GLClearError();\
     x;\
     ASSERT(GLLogCall(#x,__FILE__,__LINE__))
+
 static void GLClearError()
 {
     while (glGetError() != GL_NO_ERROR);
@@ -108,7 +109,6 @@ unsigned int CreateShader(const std::string& vertexShader, const std::string& fr
     return program;
 }
 
-
 void VertexBuffer::Release()
 {
     glDeleteBuffers(1, &v_bufferID);
@@ -191,4 +191,53 @@ IndexBuffer IndexBuffer::operator=(const IndexBuffer& ib)
     this->i_bufferID = ib.i_bufferID;
     this->indCount = ib.indCount;
     return IndexBuffer();
+}
+
+FrameBuffer::FrameBuffer(int w_width_, int w_height_)
+{
+    w_width = w_width_;
+    w_height = w_height_;
+    glGenTextures(1, &texture_ID);
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glGenFramebuffers(1, &fb_ID);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_ID);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "frame buffer is done\n";
+    else
+        std::cout << "error setting up frame buffer\n";
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_ID, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void FrameBuffer::bind()
+{
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_ID);
+}
+void FrameBuffer::unBind()
+{
+    glBindTexture(GL_TEXTURE_2D, 0);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void FrameBuffer::updateSize(int w_width_, int w_height_)
+{
+    w_width = w_width_;
+    w_height = w_height_;
+}
+
+unsigned int FrameBuffer::getResultTexture()
+{
+    return texture_ID;
+}
+unsigned int FrameBuffer::getFbID()
+{
+    return fb_ID;
 }

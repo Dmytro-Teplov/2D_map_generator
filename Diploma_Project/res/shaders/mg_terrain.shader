@@ -10,11 +10,23 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform mat4 transform_;
+
+uniform int u_isFb;
 
 void main()
 {
-    gl_Position = projection * view * model * vec4(position.xyz, 1.0);
-    texcoord = texCoord;
+    if (u_isFb==0)
+    {
+        gl_Position = projection * view * model * vec4(position.xyz, 1.0);
+        texcoord = texCoord;
+    }
+    else
+    {
+        gl_Position = projection * transform_ * model * vec4(position.xyz, 1.0);
+        texcoord = texCoord;
+    }
+        
 };
 
 

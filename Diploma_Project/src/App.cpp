@@ -14,13 +14,16 @@ StateHandler state;
 glm::vec3 sun = glm::vec3(1.0, 1.0, 1.0);
 int w_width, w_height;
 glm::mat4 relative_cursor = glm::mat4(1.0f);
+
+
 Canvas canvas(100, 100);
 float prev_zoom = 1.0;
 glm::mat4 default_view = state.view;
+
+
 void windowResizeHandler(int window_width, int window_height) {
     glViewport(0, 0, window_width, window_height);
 }
-
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     state.zoom += (float)yoffset * state.zoom / 10.0f;
@@ -135,35 +138,7 @@ int main(void)
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_callback);
 
-
-    float positions[20] = {
-    -1.0f,  -1.0f, 0.0, 0.0, 1.0,
-     1.0f,  -1.0f, 0.0, 1.0, 1.0,
-     1.0f,   1.0f, 0.0, 1.0, 0.0,
-    -1.0f,   1.0f, 0.0, 0.0, 0.0
-    };
-
-    float positions_2[20] = {
-     0.0f,  0.0f, 0.0, 0.0, 1.0,
-     1.0f,  0.0f, 0.0, 1.0, 1.0,
-     1.0f,  1.0f, 0.0, 1.0, 0.0,
-     0.0f,  1.0f, 0.0, 0.0, 0.0
-    };
-
-    float positions_3[20] = {
-     -2.0f,  -2.0f, 0.0, 0.0, 1.0,
-     -1.0f,  -2.0f, 0.0, 1.0, 1.0,
-     -1.0f,  -1.0f, 0.0, 1.0, 0.0,
-     -2.0f,  -1.0f, 0.0, 0.0, 0.0
-    };
-
-    unsigned int indices[6] = {
-    0,1,2,
-    2,3,0
-    };
-
-
-    ShaderProgramSource heightmap_sources, terrain_sources, cursor_sources;
+    ShaderProgramSource heightmap_sources, terrain_sources, cursor_sources, asset_sources;
 
     heightmap_sources = ParseShader("res/shaders/mg_heightmap.shader");
     unsigned int heightmap_shader = CreateShader(heightmap_sources.vertexShader, heightmap_sources.fragmentShader);
@@ -174,21 +149,21 @@ int main(void)
     cursor_sources = ParseShader("res/shaders/mg_cursor.shader");
     unsigned int cursor_shader = CreateShader(cursor_sources.vertexShader, cursor_sources.fragmentShader);
     
-    
+    asset_sources = ParseShader("res/shaders/mg_mpds.shader");
+    unsigned int asset_shader = CreateShader(asset_sources.vertexShader, asset_sources.fragmentShader);
+
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
 
-    //Quad assets[128];
     
     canvas.initialize(false);
-    //canvas.addFrameBufferQuad(w_width, w_height, heightmap_shader, "res/assets/default_map.png");
     canvas.createTexture(canvas_width,canvas_height);
     canvas.debug();
     canvas.setShader(terrain_shader);
 
+    AssetHandler mountains;
 
     Quad frm_buffr(w_width, w_height);
-    //frm_buffr.setTexture("res/assets/default_map.png");
     frm_buffr.initialize(false);
     frm_buffr.texture = canvas.fb_texture;
     frm_buffr.debug();
@@ -199,7 +174,14 @@ int main(void)
     brush.debug();
     brush.setShader(cursor_shader);
 
+    Quad ass(100, 100);
+    ass.initialize(false);
+    ass.debug();
+    ass.setShader(asset_shader);
+
     state.window = window;
+
+    //SETTING UP TERRAIN SHADER
 
     state.attachShader(terrain_shader);
     canvas.setSize(state, canvas_width, canvas_height);
@@ -212,9 +194,9 @@ int main(void)
     float res = (float)canvas_width / canvas_height;
     state.updFloat(res, "u_BgRes");
 
+    //SETTING UP CURSOR SHADER
 
     state.attachShader(cursor_shader);
-    //brush.model = glm::scale(glm::mat4(1.0f), glm::vec3(state.brush_size, state.brush_size, 1.0f));
     state.updMat(brush.model, "model");
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
@@ -222,31 +204,28 @@ int main(void)
     state.updVec(glm::vec2(0, 0), "u_pos");
     state.updFloat(state.brush_size, "u_circle_size");
 
-    state.attachShader(heightmap_shader);
-    state.updMat(frm_buffr.model, "model");
+    //SETTING UP ASSET SHADER
+
+    state.attachShader(asset_shader);
+    state.updMat(ass.model, "model");
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
+    //res = (float)canvas_width / canvas_height;
     state.updFloat(res, "u_BgRes");
-    
-    
 
-    unsigned int heightmap;
-    glGenTextures(1, &heightmap);
-    glBindTexture(GL_TEXTURE_2D, heightmap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //SETTING UP HEIGHTMAP GENERATION SHADER
 
-    unsigned int fb;
-    glGenFramebuffers(1,&fb);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "frame buffer is done\n";
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, heightmap, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    state.attachShader(heightmap_shader);
+    state.updFloat(res, "u_BgRes");
 
-    canvas.texture = heightmap;
+    //CREATING FRAME BUFFER OBJECT FOR TERRAIN GEN
+
+    FrameBuffer heightmap_FB(w_width, w_height);
+    canvas.texture = heightmap_FB.getResultTexture();
+
+
+    FrameBuffer resulting_FB(w_width, w_height);
+    mountains.bgTexture_ID = resulting_FB.getResultTexture();
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -261,8 +240,6 @@ int main(void)
 
     double x = 0;
     double y = 0;
-
-    glm::mat4 view_relative;
 
     UiHandler ui;
     ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
@@ -280,7 +257,6 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -293,19 +269,23 @@ int main(void)
         glfwGetCursorPos(window, &state.curs_x, &state.curs_y);
 
         //FRAME BUFFER GENERATION
-        glBindTexture(GL_TEXTURE_2D, heightmap);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-        state.attachFramebuffer(fb);
+        heightmap_FB.updateSize(w_width, w_height);
+        heightmap_FB.bind();
+        state.saveFbID(heightmap_FB.getFbID());
+
+
         //updating terrain generation settings
         state.updFloat(canvas.noise_compl, "u_complexity");
         state.updFloat(canvas.noise_1_scale, "u_scale1");
         state.updFloat(canvas.noise_2_scale, "u_scale2");
         frm_buffr.draw();
         
+        heightmap_FB.unBind();
+        state.saveFbID(0);
 
         //CANVAS DRAWING 
         state.attachShader(terrain_shader);
-        
+        state.updInt(0, "u_isFb");
         state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
         state.updMat(state.projection, "projection");
         state.updVec(canvas.terrain_c,"u_terrain_color");
@@ -318,28 +298,50 @@ int main(void)
         if (state.save)
         {
             state.save = false;
-
+            //DO SAVE
         }
-
-        state.attachFramebuffer(0);
-        view_relative = state.view;
-        //state.updMat(state.view, "view");
+        
+        state.view_relative = state.view;
         if (state.mouse_pressed)
         {
-            //state.view = view_relative;
             glfwGetCursorPos(window, &x, &y);
 
             if (x > state.batman_panel_width)
             {
                 state.transform = glm::vec3(2)*glm::vec3((x - state.last_x), -(y - state.last_y), 0.0f);
-                view_relative = glm::translate(view_relative, state.transform / glm::vec3(state.zoom));
+                state.view_relative = glm::translate(state.view_relative, state.transform / glm::vec3(state.zoom));
             }
 
         }
         
-        state.updMat(view_relative, "view");
+        state.updMat(state.view_relative, "view");
         canvas.draw();
 
+        state.updInt(1, "u_isFb");
+        state.updMat(glm::translate(default_view, glm::vec3(-(float)(w_width-canvas_width), (float)(w_height - canvas_height),0)), "transform_");
+        
+
+        resulting_FB.updateSize(w_width, w_height);
+        resulting_FB.bind();
+        state.saveFbID(resulting_FB.getFbID());
+        canvas.draw();
+        resulting_FB.unBind();
+        state.saveFbID(0);
+        //if (mountains.number_of_assets>0)
+        //{
+        //    for (int i = 0; i < mountains.number_of_assets; i++)
+        //    {
+        //        //mountains.assets[i].draw(state, cursor_shader);
+        //        std::cout << "\n" << mountains.asset_positions[i][0] << "\t" << mountains.asset_positions[i][1] << std::endl;
+        //    }
+        //    mountains.number_of_assets = 0;
+        //}
+
+
+        
+
+        mountains.draw(state,canvas, asset_shader, glm::translate(default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)));
+        
         //CURSOR DRAWING
         if (state.sel_tool != 0)
         {
@@ -358,15 +360,15 @@ int main(void)
 
                 painter.brush_size = state.brush_size;
                 painter.brush_hardness = state.brush_hardness;
-                painter.paint(x,y,canvas,state);
+                painter.paint(x, y, canvas, state);
             }
-        }   
-        
-
-        //UI
-        ui.renderUI(state, canvas, w_width, w_height, canvas_width, canvas_height, res);
+        }
 
         state.attachShader(heightmap_shader);
+        //UI
+        ui.renderUI(state, canvas, mountains ,w_width, w_height, canvas_width, canvas_height, res);
+
+        
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

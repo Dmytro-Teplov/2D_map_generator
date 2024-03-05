@@ -6,10 +6,6 @@ layout(location = 1) in vec2 texCoord;
 out vec2 texcoord;
 
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
 
 void main()
 {
@@ -186,8 +182,8 @@ void main()
     //    color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (terrain_mask - 0.6) / 0.35);
     //if (terrain_mask > 0.95)//rocky mountains
     //    color = vec4(0.9, 0.9, 0.9, 1.0);
-    color.rgb = vec3(terrain_mask);
-    color.a = terrain_mask;
+    //color.rgb = vec3(terrain_mask);
+    //color.a = terrain_mask;
     color.r = terrain_mask;
     color.b = water_mask;
     color.g = terrain_noise_big;

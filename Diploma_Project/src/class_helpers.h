@@ -1,4 +1,5 @@
 #pragma once
+
 #include <imgui.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
@@ -11,11 +12,13 @@
 #include <string>
 #include <filesystem>
 #include "GL_helpers.h"
+#include "poisson_disk_sampling.h"
 //#include "nfd.h"
 //#include <stdio.h>
 //#include <stdlib.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
+
 
 class StateHandler
 {
@@ -57,6 +60,7 @@ public:
     float density_1 = 1.0;
 
     glm::vec3 transform = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::mat4 view_relative = glm::mat4(1.0f);
     //glm::mat4 model = glm::mat4(1.0f);//for future add this to the quad class
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
     glm::mat4 projection = glm::ortho(-1.0f, +1.0f, -1.0f, +1.0f, 0.1f, 100.0f);
@@ -64,10 +68,12 @@ public:
     int sel_tool = 0;//0 - move tool, 1 - terrain brush
 
     StateHandler();
-    void attachFramebuffer(unsigned int framebuffer_);
+    void saveFbID(unsigned int framebuffer_);
     void attachShader(unsigned int shader_);
     void updMat(glm::mat4 matrix, const char* matrix_name);
     void updFloat(float num, const char* name);
+    void updInt(int val, const char* name);
+    void updSampler(int sampler, const char* name);
     void updVec(glm::vec3 vec, const char* vec_name);
     void updVec(glm::vec2 vec, const char* vec_name);
     void updVec(glm::vec4 vec, const char* vec_name);
@@ -78,11 +84,12 @@ class Quad
 {
     //data to draw a quad
 protected:
+    
     float vertices[20] = {};
     int position_stride = 0;
-    int uv_stride = 0 ;
-    unsigned int indices[6] = {};
-    const char* texture_path = "";
+    int uv_stride = 0;
+    //unsigned int indices[6] = {};
+    
     unsigned int shader = 0;
 
     float x_dim = 0;
@@ -90,25 +97,32 @@ protected:
 
     VertexBuffer vb;
     IndexBuffer ib;
-    unsigned int vao = 0;
-    
     
 public:
+    const char* texture_path = "";
+    unsigned int vao = 0;
+    unsigned int vbo = 0;
+    unsigned int ebo = 0;
+
+    unsigned int indices[6] = {};
+
     glm::mat2 ssbb = glm::mat2(1.0f);
     glm::mat4 model = glm::mat4(1.0f);
     unsigned int texture = 0;
     
     //functions
     Quad();
+    ~Quad();
     Quad(float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_);
     Quad(int width, int height);
-
+    void create(int width, int height);
     void initialize(bool use_texture);
     void changeSize(float canvas_ratio, bool w_ratio);
     void setTexture(const char* texture_path_);
     void setShader(unsigned int shader_);
     void debug();
     void draw();
+    void getReadyForDraw();
     void calculateSSBB(StateHandler& state);
     bool isInside(float posx, float posy);
     Quad operator=(const Quad& q);
@@ -142,6 +156,38 @@ public:
     void createTexture(int width, int height);
 };
 
+
+ 
+class Asset
+{
+    unsigned int id;
+    unsigned int texture_id;
+    float x = 0;
+    float y = 0;
+    Asset(float x, float y);
+    //void draw(StateHandler& state, unsigned int shader_);
+    //void createAsset(float x,float y);
+};
+
+class AssetHandler
+{
+public:
+    unsigned int number_of_assets = 0;
+
+    std::vector<glm::vec3> asset_positions;
+    unsigned int instanceVBO = 0;
+    unsigned int bgTexture_ID = 0;
+    Quad asset;
+    //Quad* assets = new Quad[number_of_assets]();
+    //AssetHandler();
+    AssetHandler();
+    void genDistribution(Canvas& canvas, float radius);
+    void genAssets(Canvas& canvas, float radius);
+    void draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view);
+//private:
+//    std::vector<std::array<float, 2>> sampling(Canvas& canvas, float radius);
+};
+
 class Painter
 {
     //Canvas canvas;
@@ -156,7 +202,6 @@ public:
     void paintWater(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height);
 };
 
-
 class UiHandler
 {
     int i = 0;
@@ -166,7 +211,7 @@ class UiHandler
     float sliderWidth = 100;
 public:
 
-    void renderUI(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void renderUI(StateHandler& state, Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
     void setCustomStyle();
     void setCustomFont(const char regular[], const char bold[]);
     void middleLabel(const char* text);

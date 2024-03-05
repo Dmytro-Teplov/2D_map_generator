@@ -52,3 +52,21 @@ public:
 	IndexBuffer operator=(const IndexBuffer& ib);
 };
 
+class FrameBuffer
+{
+private:
+	unsigned int fb_ID = 0;
+	unsigned int texture_ID = 0;
+	unsigned int shader_ID = 0;
+	int w_width = 640;
+	int w_height = 480;
+public:
+	FrameBuffer(int w_width_, int w_height_);
+	void bind();
+	void unBind();
+	void updateSize(int w_width_, int w_height_);
+	unsigned int getResultTexture();
+	unsigned int getFbID();
+	
+	//Create fb class and then create fb to colorized map to.
+};

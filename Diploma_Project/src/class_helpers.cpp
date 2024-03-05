@@ -4,15 +4,17 @@
 #include <stb_image.h>
 #include <cmath> 
 #include <cstring> 
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
-#include <gtc/type_ptr.hpp>
-#include "GL_helpers.h"
+//#include <glm.hpp>
+//#include <gtc/matrix_transform.hpp>
+//#include <gtc/type_ptr.hpp>
+//#include "GL_helpers.h"
+
 
 #define ASSERT(x) if(!(x)) __debugbreak();
 #define GLCall(x) GLClearError();\
     x;\
     ASSERT(GLLogCall(#x,__FILE__,__LINE__))
+
 static void GLClearError()
 {
     while (glGetError() != GL_NO_ERROR);
@@ -32,6 +34,10 @@ Quad::Quad()
     for (int i = 0; i < 20; i++) {
         vertices[i] = 0.f;
     }
+}
+Quad::~Quad()
+{
+
 }
 Quad::Quad(float vertices_[20], int pos_stride_, int uv_stride_, unsigned int indices_[6], const char* texture_path_)
 {
@@ -72,14 +78,41 @@ Quad::Quad(int width, int height)
     uv_stride = uv_stride_;
     texture_path = "";
 }
+void Quad::create(int width, int height)
+{
+    float vertices_[20] = {
+    -1.0f,   1.0f, 0.0, 0.0, 1.0,
+     1.0f,   1.0f, 0.0, 1.0, 1.0,
+     1.0f,  -1.0f, 0.0, 1.0, 0.0,
+    -1.0f,  -1.0f, 0.0, 0.0, 0.0
+    };
+    unsigned int indices_[6] = {
+    0,1,2,
+    2,3,0
+    };
+    int pos_stride_ = 5;
+    int uv_stride_ = 5;
+    for (int i = 0; i < 20; i++) {
+        vertices[i] = vertices_[i];
+        if (i < 6)
+        {
+            indices[i] = indices_[i];
+        }
+    }
+    position_stride = pos_stride_;
+    uv_stride = uv_stride_;
+    texture_path = "";
+}
 void Quad::initialize(bool use_texture)
 {
      
     //unsigned int vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-   
+
     vb.initialize(vertices, std::size(vertices) * sizeof(float));
+
+    ib.initialize(indices, std::size(indices));
 
     std::cout << glGetError();
     
@@ -91,12 +124,13 @@ void Quad::initialize(bool use_texture)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * uv_stride, (void*)(sizeof(float) * position_stride - sizeof(float) * 2));//2 is the amount of uv coordinates
 
-    ib.initialize(indices, std::size(indices));
+    
 
 
     // Load the image data
     if (use_texture) 
     {
+        stbi_set_flip_vertically_on_load(true);
         int channels;
         int width, height;
         unsigned char* imageData = stbi_load(texture_path, &width, &height, &channels, 4);
@@ -225,21 +259,29 @@ void Quad::debug()
 }
 void Quad::draw()
 {
+    
+    glBindVertexArray(vao);
+    vb.bind();
+    ib.bind();
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    
+}
+void Quad::getReadyForDraw()
+{
     vb.bind();
     glBindVertexArray(vao);
     ib.bind();
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 }
 
 StateHandler::StateHandler()
 {
 }
 
-void StateHandler::attachFramebuffer(unsigned int framebuffer_)
+void StateHandler::saveFbID(unsigned int framebuffer_)
 {
     framebuffer = framebuffer_;
-    glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);
 }
 void StateHandler::attachShader(unsigned int shader_)
 {
@@ -257,25 +299,33 @@ void StateHandler::updFloat(float num, const char* name)
     int location = glGetUniformLocation(shader, name);
     glUniform1f(location, num);
 }
-
-void StateHandler::updVec(glm::vec3 vec, const char* vec_name)
+void StateHandler::updInt(int val, const char* name)
 {
-    int location = glGetUniformLocation(shader, vec_name);
-    glUniform3fv(location, 1, glm::value_ptr(vec));
+    int location = glGetUniformLocation(shader, name);
+    glUniform1i(location, val);
+}
+void StateHandler::updSampler(int sampler, const char* name)
+{
+    int location = glGetUniformLocation(shader, name);
+    glUniform1i(location, sampler);
 }
 void StateHandler::updVec(glm::vec2 vec, const char* vec_name)
 {
     int location = glGetUniformLocation(shader, vec_name);
     glUniform2fv(location, 1, glm::value_ptr(vec));
 }
-
+void StateHandler::updVec(glm::vec3 vec, const char* vec_name)
+{
+    int location = glGetUniformLocation(shader, vec_name);
+    glUniform3fv(location, 1, glm::value_ptr(vec));
+}
 void StateHandler::updVec(glm::vec4 vec, const char* vec_name)
 {
     int location = glGetUniformLocation(shader, vec_name);
     glUniform4fv(location, 1, glm::value_ptr(vec));
 }
 
-void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
     ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -342,8 +392,12 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, int& w_width, int& 
     ImGui::InputInt("Noise Complexity", &canvas.noise_compl);
     ImGui::InputFloat("Noise 1 Scale", &canvas.noise_1_scale);
     ImGui::InputFloat("Noise 2 Scale", &canvas.noise_2_scale);
-    ImGui::SliderFloat("Town density", &state.density_1,0.1f,10.0f);
+    ImGui::SliderFloat("Town density", &state.density_1,0.01f,1.0f);
 
+    if (ImGui::Button("generate mpds", ImVec2(windowSize.x, 30)))
+    {
+        assets.genDistribution(canvas, 1.0/state.density_1);
+    }
     middleLabel("Export");
     if (ImGui::Button("Save into PNG", ImVec2(windowSize.x, 30)))
     {
@@ -840,7 +894,91 @@ void Painter::paintWater(unsigned char*& canvas_rgba, int abs_posx, int abs_posy
     }
 }
 
-//void Painter::stamp(float posx, float posy, int width, int height)
-//{
-//
-//}
+
+
+AssetHandler::AssetHandler() : asset(50, 50) {
+    asset.texture_path = "res/assets/mountains/mountain_1.png";
+    asset.initialize(true);
+    asset.debug();
+}
+
+struct less_than_key
+{
+    inline bool operator() (const glm::vec3& struct1, const glm::vec3& struct2)
+    {
+        return (struct1[1] > struct2[1]);
+    }
+};
+
+void AssetHandler::genDistribution(Canvas& canvas, float radius)
+{
+    std::cout << "\n" << canvas.ssbb[0][0] << "\t" << canvas.ssbb[0][1] << std::endl;
+    std::cout << "\n" << canvas.ssbb[1][0] << "\t" << canvas.ssbb[1][1] << std::endl;
+    /*auto kXMin = std::array<float, 2>{{canvas.ssbb[0][0], canvas.ssbb[0][1]}};
+    auto kXMax = std::array<float, 2>{{canvas.ssbb[1][0], canvas.ssbb[1][1]}};*/
+    auto kXMin = std::array<float, 2>{{-(float)canvas.width, -(float)canvas.height}};
+    auto kXMax = std::array<float, 2>{{(float)canvas.width , (float)canvas.height}};
+    std::vector<std::array<float, 2>> pos = thinks::PoissonDiskSampling(radius, kXMin, kXMax);
+    number_of_assets = pos.size();
+    asset_positions.clear();
+    asset_positions.reserve(number_of_assets);
+    for (size_t i = 0; i < number_of_assets; ++i) 
+    {
+        asset_positions.push_back(glm::vec3(pos[i][0], pos[i][1],0));
+    }
+
+    std::sort(asset_positions.begin(), asset_positions.end(), less_than_key());
+
+    // Setting up vertex attributes for instance positions
+    glBindVertexArray(asset.vao);
+    glGenBuffers(1, &instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * number_of_assets, &asset_positions[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(2, 1);
+    glBindVertexArray(0);
+
+
+}
+
+void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view)
+{
+    
+    if (number_of_assets) 
+    {
+        asset.setShader(shader_);
+        unsigned int curr_shader = state.shader;
+        state.attachShader(shader_);
+        state.updMat(state.projection, "projection");
+        state.updMat(state.view_relative, "view");
+        state.updMat(asset.model, "model");
+        state.updMat(cust_view, "u_asset_view");
+        state.updFloat(10, "u_asset_scale");
+        state.updVec(canvas.water_c, "u_water_color");
+        state.updSampler(0, "asset_texture");
+        state.updSampler(1, "background");
+
+        glBindVertexArray(asset.vao);
+
+        glActiveTexture(GL_TEXTURE0); // Texture unit 0
+        glBindTexture(GL_TEXTURE_2D, asset.texture);
+        glActiveTexture(GL_TEXTURE1); // Texture unit 1
+        glBindTexture(GL_TEXTURE_2D, bgTexture_ID);
+
+        //glBindTexture(GL_TEXTURE_2D,asset.texture);
+        glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, number_of_assets);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindVertexArray(0);
+
+        state.attachShader(curr_shader);
+    }
+    
+    
+}
