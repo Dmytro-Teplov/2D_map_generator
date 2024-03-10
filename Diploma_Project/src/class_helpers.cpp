@@ -590,9 +590,9 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, 
     {
         ImGui::ColorEdit4("Second Color", color2);
     }
+    canvas.use_secondary_tc = is_gradient;
     canvas.terrain_c = glm::vec4(color[0], color[1], color[2], color[3]);
-    //std::cout << glm::to_string(canvas.terrain_c) << std::endl;
-    //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
+    canvas.terrain_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::Checkbox("Outline", &outline);
     if (outline)
     {
@@ -628,15 +628,17 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, in
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
     middleLabel("Water Settings");
     static float color[4] = { 0.66f,0.76f,0.85f,1.0f };
+    static float color2[4] = { 0.66f,0.76f,0.85f,1.0f };
     ImGui::ColorEdit4("Color", color);
     static bool is_gradient = false;
     ImGui::Checkbox("Gradient", &is_gradient);
     if (is_gradient)
     {
-        static float color2[4] = { 0.66f,0.76f,0.85f,1.0f };
         ImGui::ColorEdit4("Second Color", color2);
     }
     canvas.water_c = glm::vec4(color[0], color[1], color[2], color[3]);
+    canvas.use_secondary_wc = is_gradient;
+    canvas.water_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     //std::cout << glm::to_string(canvas.water_c) << std::endl;
     //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::End();

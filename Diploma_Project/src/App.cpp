@@ -19,7 +19,7 @@ glm::mat4 relative_cursor = glm::mat4(1.0f);
 Canvas canvas(100, 100);
 float prev_zoom = 1.0;
 glm::mat4 default_view = state.view;
-
+glm::vec3 global_transform = glm::vec3(0.0, 0.0, 0.0);
 
 void windowResizeHandler(int window_width, int window_height) {
     glViewport(0, 0, window_width, window_height);
@@ -32,7 +32,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     if (state.zoom > 25.0f)
         state.zoom = 25.0f;
     state.view = glm::scale(default_view, glm::vec3(state.zoom, state.zoom, state.zoom));
-
+    state.view = glm::translate(state.view, global_transform / glm::vec3(state.zoom));
     canvas.calculateSSBB(state);
 }
 void mouse_callback(GLFWwindow* window, int button, int action, int mods)
@@ -58,6 +58,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
                 state.mouse_pressed = false;
                 state.view = glm::translate(state.view, state.transform / glm::vec3(state.zoom));
+                global_transform += state.transform;
                 canvas.calculateSSBB(state);
             }
         }
@@ -96,6 +97,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
                 state.mouse_pressed = false;
                 state.view = glm::translate(state.view, state.transform / glm::vec3(state.zoom));
+                global_transform += state.transform;
                 canvas.calculateSSBB(state);
                
             }
@@ -291,9 +293,14 @@ int main(void)
         state.updVec(canvas.terrain_c,"u_terrain_color");
         state.updVec(canvas.water_c,"u_water_color");
         state.updVec(canvas.outline_c,"u_outline_color");
+        state.updVec(canvas.terrain_secondary_c, "u_terrain_secondary_c");
+        state.updVec(canvas.water_secondary_c, "u_water_secondary_c");
+        state.updInt((int)canvas.use_secondary_tc, "u_use_secondary_tc");
+        state.updInt((int)canvas.use_secondary_wc, "u_use_secondary_wc");
         state.updFloat(canvas.outline_thickness,"u_outline_thickness");
         state.updFloat(canvas.outline_hardness,"u_outline_hardness");
         state.updFloat(canvas.use_outline,"u_use_outline");
+        
 
         if (state.save)
         {

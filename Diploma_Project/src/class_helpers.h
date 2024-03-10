@@ -142,11 +142,15 @@ public:
     float noise_1_scale = 4.0;
     float noise_2_scale = 1.0;
     glm::vec4 terrain_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
+    glm::vec4 terrain_secondary_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
     glm::vec4 water_c = glm::vec4(0.66f, 0.76f, 0.85f, 1.0f);
+    glm::vec4 water_secondary_c = glm::vec4(0.66f, 0.76f, 0.85f, 1.0f);
     glm::vec4 outline_c = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     float outline_thickness = 1.0;
     float outline_hardness = 1.0;
     bool use_outline = false;
+    bool use_secondary_tc = false;
+    bool use_secondary_wc = false;
 
 
     Canvas(int width, int height);

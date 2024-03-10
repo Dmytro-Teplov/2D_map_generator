@@ -47,7 +47,11 @@ uniform float u_BgRes;
 uniform vec4 u_terrain_color;
 uniform vec4 u_water_color;
 uniform vec4 u_outline_color;
+uniform vec4 u_terrain_secondary_c;
+uniform vec4 u_water_secondary_c;
 uniform bool u_use_outline;
+uniform bool u_use_secondary_tc;
+uniform bool u_use_secondary_wc;
 
 
 #ifdef GL_ES
@@ -86,18 +90,25 @@ void main()
     //blend water and terrain
     float terrain_mask = clamp(text.r + text.b, 0.0, 1.0);
     if (terrain_mask <= 0.5)//water
-        color = u_water_color;
+        if (u_use_secondary_wc)
+            color = mix(u_water_color, u_water_secondary_c, terrain_mask / 0.5);
+        else
+            color = u_water_color;
 
     if (terrain_mask > 0.25 && terrain_mask < 0.3 && (text.g > 0.05 || text.a > 0.15))
         color =  vec4(0.9, 0.9, 0.9, 1.0);
     
     if (terrain_mask > 0.5)//terrain
-        color = u_terrain_color;
+        if (u_use_secondary_tc)
+            color = mix(u_terrain_color, u_terrain_secondary_c, (terrain_mask - 0.6) / 0.35);
+        else
+            color = u_terrain_color;
     //color = mix(u_water_color, u_terrain_color, text.r);
     if (u_use_outline)
     {
         float outlineWidth = u_outline_thickness / 512;
-
+        
+        //float hardness = (1 - (sqrt(i * i + j * j) * 2) / brush_size) * brush_hardness;
         for (int x = -1; x <= 1; ++x)
         {
             for (int y = -1; y <= 1; ++y)
@@ -107,8 +118,8 @@ void main()
                 vec4 currColor = sample_terrain(texcoord);
                 if (neighborColor.r == 1.0f && currColor.r < 0.5f)
                 {
+                    
                     color = u_outline_color;
-                    break;
                 }
 
             }
