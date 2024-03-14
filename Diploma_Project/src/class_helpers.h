@@ -59,6 +59,9 @@ public:
 
     float density_1 = 1.0;
 
+    bool regenerate_buildings = false;
+    bool erase_buildings = false;
+
     glm::vec3 transform = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::mat4 view_relative = glm::mat4(1.0f);
     //glm::mat4 model = glm::mat4(1.0f);//for future add this to the quad class
@@ -134,6 +137,7 @@ public:
     int width = 480;
     int height = 640;
     unsigned char* canvas_rgba;
+    unsigned char* buildings_rgba;
     unsigned int fb_texture = 0;
     int fb_width = 480;
     int fb_height = 640;
@@ -176,9 +180,11 @@ class Asset
 class AssetHandler
 {
 public:
+    unsigned int number_of_points = 0;
     unsigned int number_of_assets = 0;
 
     std::vector<glm::vec3> asset_positions;
+    std::vector<glm::vec3> mpds_positions;
     unsigned int instanceVBO = 0;
     unsigned int bgTexture_ID = 0;
     Quad asset;
@@ -204,6 +210,7 @@ public:
     void paint(float posx, float posy, Canvas& canvas, StateHandler& state);
     void paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height);
     void paintWater(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height);
+    void paintBuildings(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, bool erase);
 };
 
 class UiHandler
@@ -221,4 +228,5 @@ public:
     void middleLabel(const char* text);
     void terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
     void waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void buildingsPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
 };

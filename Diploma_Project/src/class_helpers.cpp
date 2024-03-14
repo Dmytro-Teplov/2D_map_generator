@@ -362,6 +362,7 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     }
     if (ImGui::Button("Buildings", ImVec2(windowSize.x, 30)))
     {
+        state.sel_tool = 3;
     }
     if (ImGui::Button("Flora", ImVec2(windowSize.x, 30)))
     {
@@ -397,6 +398,7 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     if (ImGui::Button("generate mpds", ImVec2(windowSize.x, 30)))
     {
         assets.genDistribution(canvas, 1.0/state.density_1);
+        state.regenerate_buildings = true;
     }
     middleLabel("Export");
     if (ImGui::Button("Save into PNG", ImVec2(windowSize.x, 30)))
@@ -442,6 +444,9 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
             break;
         case 2:
             waterPanel(state,canvas, w_width, w_height, canvas_width, canvas_height, resolution);
+            break;
+        case 3:
+            buildingsPanel(state, canvas, w_width, w_height, canvas_width, canvas_height, resolution);
             break;
     }
     ImGui::Render();
@@ -643,7 +648,30 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, in
     //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::End();
 }
+void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+{
+    ImGui::Begin("Buildings Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
+    ImGui::SetWindowPos(ImVec2(w_width - windowSize.x, 0));
+    state.robin_panel_width = w_width - windowSize.x;
+    if (ImGui::IsWindowHovered())
+    {
+        state.panel_hovered = true;
+        glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    else
+    {
+        if (!state.panel_hovered && state.sel_tool != 0)
+            glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
 
+    middleLabel("Buildings Brush");
+    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::Checkbox("Erase", &state.erase_buildings);
+    middleLabel("Buildings Settings");
+    ImGui::End();
+}
 Canvas::Canvas(int width_, int height_)
 {
     width = width_;
@@ -724,13 +752,31 @@ void Canvas::setSize(StateHandler& state, int width_, int height_)
     model = glm::scale(glm::mat4(1.0f), glm::vec3(width_, height_, 1.0f));
 
 
-    GLubyte* data = (GLubyte*)malloc(sizeof(GLubyte) * width * height * 4); // assuming 4 components per pixel
+
+    unsigned char* imageData = (unsigned char*)malloc(width * height * 4);
+    unsigned char* maskData = (unsigned char*)malloc(width * height * 4);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int index = (y * width + x) * 4;
+            imageData[index + 0] = 0; // Red
+            imageData[index + 1] = 0;   // Green
+            imageData[index + 2] = 255;   // Blue
+            imageData[index + 3] = 255;   // Alpha
+
+            maskData[index + 0] = 0; // Red
+            maskData[index + 1] = 0;   // Green
+            maskData[index + 2] = 0;   // Blue
+            maskData[index + 3] = 255;   // Alpha
+        }
+    }
 
     // get the texture data
     glBindTexture(GL_TEXTURE_2D, fb_texture);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    canvas_rgba = (unsigned char*)data;
-    
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+
+    canvas_rgba = imageData;
+    buildings_rgba = maskData;
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas_rgba);
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -764,6 +810,19 @@ void Canvas::setTexture(const char* texture_path_)
     fb_width = width;
     fb_height = height;
     canvas_rgba = imageData;
+
+    unsigned char* maskData = (unsigned char*)malloc(width * height * channels);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int index = (y * width + x) * channels;
+            maskData[index + 0] = 0; // Red
+            maskData[index + 1] = 0;   // Green
+            maskData[index + 2] = 0;   // Blue
+            maskData[index + 3] = 255;   // Alpha
+        }
+    }
+
+    buildings_rgba = maskData;
     //unsigned int texture;
     glGenTextures(1, &fb_texture);
     glActiveTexture(GL_TEXTURE0);
@@ -787,18 +846,25 @@ void Canvas::createTexture(int width,int height)
     int channels=4;
     //int width, height;
     unsigned char* imageData = (unsigned char*)malloc(width * height * channels);
+    unsigned char* maskData = (unsigned char*)malloc(width * height * channels);
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             int index = (y * width + x) * channels;
             imageData[index + 0] = 0; // Red
             imageData[index + 1] = 0;   // Green
             imageData[index + 2] = 255;   // Blue
-            imageData[index + 3] = 255;   // Blue
+            imageData[index + 3] = 255;   // Alpha
+
+            maskData[index + 0] = 0; // Red
+            maskData[index + 1] = 0;   // Green
+            maskData[index + 2] = 0;   // Blue
+            maskData[index + 3] = 255;   // Alpha
         }
     }
     fb_width = width;
     fb_height = height;
     canvas_rgba = imageData;
+    buildings_rgba = maskData;
     //unsigned int texture;
     glGenTextures(1, &fb_texture);
     glActiveTexture(GL_TEXTURE0);
@@ -831,20 +897,21 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
         switch (state.sel_tool)
         {
         case 1:
-
             paintTerrain(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
             break;
         case 2:
             paintWater(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
             break;
+        case 3:
+            paintBuildings(canvas.buildings_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, state.erase_buildings);
+            break;
         }
-
         // Bind the texture object
         glBindTexture(GL_TEXTURE_2D, canvas.fb_texture);
 
         // Upload the image data to the texture object
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
-        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
+
     }
     
 
@@ -895,7 +962,22 @@ void Painter::paintWater(unsigned char*& canvas_rgba, int abs_posx, int abs_posy
         }
     }
 }
-
+void Painter::paintBuildings(unsigned char*& buildings_rgba, int abs_posx, int abs_posy, int width, int height, bool erase)
+{
+    //std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
+    for (int i = -brush_size / 2; i < brush_size / 2; i++)
+    {
+        for (int j = -brush_size / 2; j < brush_size / 2; j++)
+        {
+            int index = (width * (abs_posy + j) + abs_posx + i) * 4;
+            if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size) && (index + 2 < width * height * 4) && (index > 0))
+            {
+                float hardness = (1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size) * brush_hardness;
+                buildings_rgba[index] = 255*(!erase);
+            }
+        }
+    }
+}
 
 
 AssetHandler::AssetHandler() : asset(50, 50) {
@@ -919,38 +1001,74 @@ void AssetHandler::genDistribution(Canvas& canvas, float radius)
     /*auto kXMin = std::array<float, 2>{{canvas.ssbb[0][0], canvas.ssbb[0][1]}};
     auto kXMax = std::array<float, 2>{{canvas.ssbb[1][0], canvas.ssbb[1][1]}};*/
     auto kXMin = std::array<float, 2>{{-(float)canvas.width, -(float)canvas.height}};
-    auto kXMax = std::array<float, 2>{{(float)canvas.width , (float)canvas.height}};
+    auto kXMax = std::array<float, 2>{{(float)canvas.width, (float)canvas.height}};
     std::vector<std::array<float, 2>> pos = thinks::PoissonDiskSampling(radius, kXMin, kXMax);
-    number_of_assets = pos.size();
-    asset_positions.clear();
-    asset_positions.reserve(number_of_assets);
-    for (size_t i = 0; i < number_of_assets; ++i) 
+    number_of_points = pos.size();
+    mpds_positions.clear();
+    mpds_positions.reserve(number_of_points);
+
+    //int index = 0;
+    //int posx, posy;
+    for (size_t i = 0; i < number_of_points; ++i)
     {
-        asset_positions.push_back(glm::vec3(pos[i][0], pos[i][1],0));
+        ////(y * width + x)* channels
+        //posx = (pos[i][0] + canvas.width) * 0.5;
+        //posy = (canvas.height + pos[i][1]) * 0.5;
+        //index = (canvas.width * posy + posx) * 4;
+        //std::cout << (int)canvas.buildings_rgba[index] << std::endl;
+        //if ((int)canvas.buildings_rgba[index] != 0)
+        //{
+            mpds_positions.push_back(glm::vec3(pos[i][0], pos[i][1], 0));
+        //}
+        
     }
+    number_of_points = mpds_positions.size();
+    if (number_of_points)
+    {
+        std::sort(mpds_positions.begin(), mpds_positions.end(), less_than_key());
 
-    std::sort(asset_positions.begin(), asset_positions.end(), less_than_key());
+        // Setting up vertex attributes for instance positions
+        glBindVertexArray(asset.vao);
+        glGenBuffers(1, &instanceVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * number_of_points, &mpds_positions[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // Setting up vertex attributes for instance positions
-    glBindVertexArray(asset.vao);
-    glGenBuffers(1, &instanceVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * number_of_assets, &asset_positions[0], GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glVertexAttribDivisor(2, 1);
-    glBindVertexArray(0);
-
+        glEnableVertexAttribArray(2);
+        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glVertexAttribDivisor(2, 1);
+        glBindVertexArray(0);
+        
+    }
 
 }
 
 void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view)
 {
-    
+    if (number_of_points && state.regenerate_buildings)
+    {
+        int index = 0;
+        int posx, posy;
+        asset_positions.clear();
+        asset_positions.reserve(number_of_points);
+        for (size_t i = 0; i < number_of_points; ++i)
+        {
+            //(y * width + x)* channels
+            posx = (mpds_positions[i][0] + canvas.width) * 0.5;
+            posy = (canvas.height + mpds_positions[i][1]) * 0.5;
+            index = (canvas.width * posy + posx) * 4;
+            //std::cout << (int)canvas.buildings_rgba[index] << std::endl;
+            if ((int)canvas.buildings_rgba[index] != 0)
+            {
+                asset_positions.push_back(mpds_positions[i]);
+            }
+
+        }
+        number_of_assets = asset_positions.size();
+        //state.regenerate_buildings = false;
+    }
     if (number_of_assets) 
     {
         asset.setShader(shader_);
@@ -965,7 +1083,13 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
         state.updSampler(0, "asset_texture");
         state.updSampler(1, "background");
 
+        
         glBindVertexArray(asset.vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * number_of_assets, &asset_positions[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 
         glActiveTexture(GL_TEXTURE0); // Texture unit 0
         glBindTexture(GL_TEXTURE_2D, asset.texture);

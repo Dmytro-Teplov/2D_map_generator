@@ -36,6 +36,7 @@ out vec4 color;
 
 uniform sampler2D asset_texture;
 uniform sampler2D background;
+
 uniform float u_BgRes;
 uniform vec4 u_water_color;
 
@@ -54,9 +55,9 @@ void main()
         discard;
     if (bg_color == vec4(0,0,0,0))
         discard;
-    vec4 c = bg_color - u_water_color;
-    if ((c.r < 0.01) && (c.g < 0.01) && (c.b < 0.01))
-        discard;
+    //vec4 c = bg_color - u_water_color;
+    //if ((c.r < 0.01) && (c.g < 0.01) && (c.b < 0.01))
+    //    discard;
     //    if (bg_color > (u_water_color - vec4(0.01)))
     //        discard;
 };

@@ -63,7 +63,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             }
         }
     }
-    else if (state.sel_tool == 1|| state.sel_tool == 2)
+    else if (state.sel_tool == 1|| state.sel_tool == 2 || state.sel_tool == 3)
     {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
         {
@@ -71,11 +71,15 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (canvas.isInside(state.last_x, state.last_y))
             {
                 state.brush_pressed = true;
+                if(state.sel_tool == 3)
+                    state.regenerate_buildings = true;
             }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
         {
             state.brush_pressed = false;
+            if (state.sel_tool == 3)
+                state.regenerate_buildings = false;
         }
         if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
         {
@@ -305,7 +309,6 @@ int main(void)
         if (state.save)
         {
             state.save = false;
-            //DO SAVE
         }
         
         state.view_relative = state.view;
