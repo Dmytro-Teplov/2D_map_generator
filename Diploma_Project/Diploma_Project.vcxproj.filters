@@ -53,5 +53,8 @@
     <ClInclude Include="src\class_helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\Dependencies\stb\stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

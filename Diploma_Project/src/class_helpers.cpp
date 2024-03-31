@@ -1,9 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
-
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "class_helpers.h"
-#include <stb_image.h>
-#include <cmath> 
-#include <cstring> 
+
 //#include <glm.hpp>
 //#include <gtc/matrix_transform.hpp>
 //#include <gtc/type_ptr.hpp>
@@ -325,6 +323,16 @@ void StateHandler::updVec(glm::vec4 vec, const char* vec_name)
     glUniform4fv(location, 1, glm::value_ptr(vec));
 }
 
+void StateHandler::exportAsPNG(unsigned int textureID, int width, int height, const char* filename)
+{
+    unsigned char* imageData = (unsigned char*)malloc(width * height * 4);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(filename, width, height, 4, imageData, width * 4);
+}
+
 void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
     ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
@@ -368,22 +376,13 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     {
     }
     middleLabel("Canvas");
-    ImGui::InputInt("canvas width", &canvas_width);
-    ImGui::InputInt("canvas height", &canvas_height);
-    if (ImGui::Button("Change the size"))
-    {
-        /*std::cout << w_width << " " << w_height << std::endl;
-        std::cout << canvas_width << " " << canvas_height << std::endl;
-        canvas.setSize(state, canvas_width, canvas_height);*/
-        /*canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
-        state.updMat(canvas.model, "model");*/
-
-    }
-    if (ImGui::Button("Reset"))
+    if (ImGui::Button("Reset", ImVec2(windowSize.x, 30)))
     {
         
         state.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
         state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
+        state.zoom = 1.0;
+        state.reset = true;
         state.updMat(state.view, "view");
         state.updMat(state.projection, "projection");
 
@@ -395,28 +394,17 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     ImGui::InputFloat("Noise 2 Scale", &canvas.noise_2_scale);
     ImGui::SliderFloat("Town density", &state.density_1,0.01f,1.0f);
 
-    if (ImGui::Button("generate mpds", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
     {
         assets.genDistribution(canvas, 1.0/state.density_1);
         state.regenerate_buildings = true;
     }
     middleLabel("Export");
+    if (ImGui::InputText("Name(with extension!)", state.export_name_data, IM_ARRAYSIZE(state.export_name_data)))
+    {
+    }
     if (ImGui::Button("Save into PNG", ImVec2(windowSize.x, 30)))
     {
-        /*nfdchar_t* outPath = NULL;
-        nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
-
-        if (result == NFD_OKAY) {
-            puts("Success!");
-            puts(outPath);
-            free(outPath);
-        }
-        else if (result == NFD_CANCEL) {
-            puts("User pressed cancel.");
-        }
-        else {
-            printf("Error: %s\n", NFD_GetError());
-        }*/
         state.save = true;
     }
 
@@ -446,12 +434,39 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
             waterPanel(state,canvas, w_width, w_height, canvas_width, canvas_height, resolution);
             break;
         case 3:
-            buildingsPanel(state, canvas, w_width, w_height, canvas_width, canvas_height, resolution);
+            buildingsPanel(state, canvas, assets, w_width, w_height, canvas_width, canvas_height, resolution);
             break;
     }
     ImGui::Render();
     
 }
+
+void UiHandler::renderStartupUI(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, unsigned int shader_)
+{
+    unsigned int curr_shader = state.shader;
+    bool open_start = false;
+    ImGui::Begin("Startup", &open_start, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::SetWindowSize(ImVec2(w_width, w_height));
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    ImGuiStyle& style = ImGui::GetStyle();
+    middleLabel("Canvas");
+    ImGui::InputInt("canvas width", &canvas_width);
+    ImGui::InputInt("canvas height", &canvas_height);
+    if (ImGui::Button("Change the size"))
+    {
+        state.initial_start = false;
+        //canvas.createTexture(canvas_width, canvas_height);
+        state.attachShader(shader_);
+        canvas.setSize(state, canvas_width, canvas_height);
+        float res = (float)canvas_width / canvas_height;
+        state.updFloat(res, "u_BgRes");
+        state.attachShader(curr_shader);
+    }
+    ImGui::End();
+    ImGui::Render();
+}
+
 
 void UiHandler::setCustomStyle()
 {
@@ -648,7 +663,7 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, in
     //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::End();
 }
-void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
 {
     ImGui::Begin("Buildings Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -662,7 +677,7 @@ void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, int& w_width
     }
     else
     {
-        if (!state.panel_hovered && state.sel_tool != 0)
+        if ((!state.panel_hovered) && state.sel_tool != 0)
             glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     }
 
@@ -670,6 +685,7 @@ void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, int& w_width
     ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
     ImGui::Checkbox("Erase", &state.erase_buildings);
     middleLabel("Buildings Settings");
+    ImGui::SliderFloat("Buildings Size", &assets.buildings_size, 0.f, 15.f);
     ImGui::End();
 }
 Canvas::Canvas(int width_, int height_)
@@ -771,8 +787,8 @@ void Canvas::setSize(StateHandler& state, int width_, int height_)
     }
 
     // get the texture data
-    glBindTexture(GL_TEXTURE_2D, fb_texture);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    /*glBindTexture(GL_TEXTURE_2D, fb_texture);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);*/
 
     canvas_rgba = imageData;
     buildings_rgba = maskData;
@@ -981,7 +997,7 @@ void Painter::paintBuildings(unsigned char*& buildings_rgba, int abs_posx, int a
 
 
 AssetHandler::AssetHandler() : asset(50, 50) {
-    asset.texture_path = "res/assets/mountains/mountain_1.png";
+    asset.texture_path = "res/assets/default_assets.png";
     asset.initialize(true);
     asset.debug();
 }
@@ -1011,16 +1027,7 @@ void AssetHandler::genDistribution(Canvas& canvas, float radius)
     //int posx, posy;
     for (size_t i = 0; i < number_of_points; ++i)
     {
-        ////(y * width + x)* channels
-        //posx = (pos[i][0] + canvas.width) * 0.5;
-        //posy = (canvas.height + pos[i][1]) * 0.5;
-        //index = (canvas.width * posy + posx) * 4;
-        //std::cout << (int)canvas.buildings_rgba[index] << std::endl;
-        //if ((int)canvas.buildings_rgba[index] != 0)
-        //{
-            mpds_positions.push_back(glm::vec3(pos[i][0], pos[i][1], 0));
-        //}
-        
+        mpds_positions.push_back(glm::vec3(pos[i][0], pos[i][1], i));
     }
     number_of_points = mpds_positions.size();
     if (number_of_points)
@@ -1067,7 +1074,7 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
 
         }
         number_of_assets = asset_positions.size();
-        //state.regenerate_buildings = false;
+        //state.regenerate_buildings = false; PROBLEM
     }
     if (number_of_assets) 
     {
@@ -1078,7 +1085,7 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
         state.updMat(state.view_relative, "view");
         state.updMat(asset.model, "model");
         state.updMat(cust_view, "u_asset_view");
-        state.updFloat(10, "u_asset_scale");
+        state.updFloat(10 * buildings_size, "u_asset_scale");
         state.updVec(canvas.water_c, "u_water_color");
         state.updSampler(0, "asset_texture");
         state.updSampler(1, "background");

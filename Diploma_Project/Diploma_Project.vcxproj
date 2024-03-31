@@ -31,6 +31,7 @@
     <ClCompile Include="src\GL_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Dependencies\stb\stb_image_write.h" />
     <ClInclude Include="src\GL_helpers.h" />
     <ClInclude Include="src\class_helpers.h" />
   </ItemGroup>

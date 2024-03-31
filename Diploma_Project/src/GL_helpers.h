@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <GL/glew.h>
+#include <cassert>
 
 
 struct ShaderProgramSource

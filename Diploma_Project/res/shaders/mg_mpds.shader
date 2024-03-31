@@ -19,9 +19,11 @@ void main()
 {
     vec3 pos = position.xyz * u_asset_scale;
     //vec2 tex_pos = texCoord.xy * u_asset_scale;
-    gl_Position = projection * view * model * vec4(pos + assetPos, 1.0);
+    gl_Position = projection * view * model * vec4(pos + vec3(assetPos.xy,0), 1.0);
     vec4 something = projection * u_asset_view * model * vec4(pos + assetPos, 1.0);
-    texcoord = texCoord;
+    //gl_InstanceID = assetPos.z;
+    int asset_num = gl_InstanceID % 2;
+    texcoord = texCoord * vec2(0.125) + vec2(asset_num * 0.125, 0.750);
     global_texcoord = vec2(something.x / 2 + 0.5, something.y / 2 + 0.5);
 };
 
@@ -55,9 +57,4 @@ void main()
         discard;
     if (bg_color == vec4(0,0,0,0))
         discard;
-    //vec4 c = bg_color - u_water_color;
-    //if ((c.r < 0.01) && (c.g < 0.01) && (c.b < 0.01))
-    //    discard;
-    //    if (bg_color > (u_water_color - vec4(0.01)))
-    //        discard;
 };

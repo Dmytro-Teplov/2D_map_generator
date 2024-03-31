@@ -125,5 +125,5 @@ void main()
             }
         }
     }
-    
+    color.a = 1.0f;
 };

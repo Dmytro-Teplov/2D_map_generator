@@ -5,6 +5,8 @@
 #include <gtc/matrix_transform.hpp>
 #include <gtx/string_cast.hpp>
 #include <gtc/type_ptr.hpp>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -13,11 +15,17 @@
 #include <filesystem>
 #include "GL_helpers.h"
 #include "poisson_disk_sampling.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
+#include <cmath> 
+#include <cstring> 
 //#include "nfd.h"
 //#include <stdio.h>
 //#include <stdlib.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
+
+
 
 
 class StateHandler
@@ -39,28 +47,37 @@ public:
     double curs_x = 0.0f;
     double curs_y = 0.0f;
 
-    bool mouse_pressed = false;
-    bool brush_pressed = false;
-    bool panel_hovered = false;
+    
 
     int batman_panel_width = 100;
     int robin_panel_width = 100;
     float brush_size = 10;
     float brush_hardness = 0.5;
-    
+
+    float density_1 = 0.01;
+
     int canvas_width = 1280;
     int canvas_height = 720;
 
     int w_width = 640;
     int w_height = 480;
 
+    
     //if set to true next rendering will happen into framebuffer and saved into texture.
-    bool save = false;
+    bool initial_start = true;
 
-    float density_1 = 1.0;
+    bool save = false;
+    bool reset = false;
 
     bool regenerate_buildings = false;
     bool erase_buildings = false;
+
+    bool mouse_pressed = false;
+    bool brush_pressed = false;
+    bool panel_hovered = false;
+
+    const char* export_name = "";
+    char export_name_data[256] = "";
 
     glm::vec3 transform = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::mat4 view_relative = glm::mat4(1.0f);
@@ -80,7 +97,7 @@ public:
     void updVec(glm::vec3 vec, const char* vec_name);
     void updVec(glm::vec2 vec, const char* vec_name);
     void updVec(glm::vec4 vec, const char* vec_name);
-    
+    void exportAsPNG(unsigned int textureID, int width, int height, const char* filename);
 };
 
 class Quad
@@ -188,6 +205,7 @@ public:
     unsigned int instanceVBO = 0;
     unsigned int bgTexture_ID = 0;
     Quad asset;
+    float buildings_size = 1.0;
     //Quad* assets = new Quad[number_of_assets]();
     //AssetHandler();
     AssetHandler();
@@ -223,10 +241,11 @@ class UiHandler
 public:
 
     void renderUI(StateHandler& state, Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void renderStartupUI(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, unsigned int shader_);
     void setCustomStyle();
     void setCustomFont(const char regular[], const char bold[]);
     void middleLabel(const char* text);
     void terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
     void waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
-    void buildingsPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
 };

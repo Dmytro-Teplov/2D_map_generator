@@ -1,7 +1,5 @@
 #include "GL_helpers.h"
-#include <GL/glew.h>
 
-#include <cassert>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     // Windows-specific debugging mechanism
