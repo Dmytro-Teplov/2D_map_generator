@@ -257,14 +257,20 @@ void Quad::debug()
 }
 void Quad::draw()
 {
-    
     glBindVertexArray(vao);
     vb.bind();
     ib.bind();
     glBindTexture(GL_TEXTURE_2D, texture);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+void Quad::draw_instance()
+{
+    glBindVertexArray(vao);
+    vb.bind();
+    ib.bind();
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    
+
 }
 void Quad::getReadyForDraw()
 {
@@ -323,14 +329,29 @@ void StateHandler::updVec(glm::vec4 vec, const char* vec_name)
     glUniform4fv(location, 1, glm::value_ptr(vec));
 }
 
-void StateHandler::exportAsPNG(unsigned int textureID, int width, int height, const char* filename)
+void StateHandler::exportAsPNG(unsigned int textureID, int width, int height,int c_width, int c_height,const char* filename, const char* filename2)
 {
-    unsigned char* imageData = (unsigned char*)malloc(width * height * 4);
+    unsigned char* imageData_raw = (unsigned char*)malloc(width * height * 4);
+    unsigned char* imageData = (unsigned char*)malloc(c_width * c_height * 4);
     glBindTexture(GL_TEXTURE_2D, textureID);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData_raw);
     glBindTexture(GL_TEXTURE_2D, 0);
     stbi_flip_vertically_on_write(true);
-    stbi_write_png(filename, width, height, 4, imageData, width * 4);
+    int index = 0;
+    for (int i = 0; i < c_height; i++)
+    {
+        for (int j = width - c_width; j < width;j++)
+        {
+            index = c_width * i + j;
+            imageData[index] = imageData_raw[index];
+            imageData[index + 1] = imageData_raw[index + 1];
+            imageData[index + 2] = imageData_raw[index + 2];
+            imageData[index + 3] = imageData_raw[index + 3];
+        }
+    }
+    //stbir_resize_uint8()
+    stbi_write_png(filename, c_width, c_height, 4, imageData, c_width * 4);
+    stbi_write_png(filename2, width, height, 4, imageData_raw, width * 4);
 }
 
 void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
@@ -363,6 +384,10 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     if (ImGui::Button("Terrain", ImVec2(windowSize.x, 30)))
     {
         state.sel_tool = 1;
+    }
+    if (ImGui::Button("Terrain 2", ImVec2(windowSize.x, 30)))
+    {
+        state.sel_tool = 4;
     }
     if (ImGui::Button("Water", ImVec2(windowSize.x, 30)))
     {
@@ -435,6 +460,9 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
             break;
         case 3:
             buildingsPanel(state, canvas, assets, w_width, w_height, canvas_width, canvas_height, resolution);
+            break;
+        case 4:
+            terrainPanel(state, canvas, w_width, w_height, canvas_width, canvas_height, resolution);
             break;
     }
     ImGui::Render();
@@ -606,22 +634,22 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, 
     static bool is_gradient = false;
     static bool outline = false;
     ImGui::Checkbox("Gradient", &is_gradient);
-    if (is_gradient)
-    {
-        ImGui::ColorEdit4("Second Color", color2);
-    }
+    ImGui::ColorEdit4("Second Color", color2);
+    ImGui::Checkbox("Use step gradient", &canvas.use_step_gradient_t);
+    ImGui::SliderInt("Steps", &canvas.steps_t, 1, 100);
+    
     canvas.use_secondary_tc = is_gradient;
     canvas.terrain_c = glm::vec4(color[0], color[1], color[2], color[3]);
     canvas.terrain_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::Checkbox("Outline", &outline);
-    if (outline)
-    {
-        ImGui::ColorEdit4("Outline Color", color3);
-        ImGui::SliderFloat("Outline Thickness", &canvas.outline_thickness, 0.f, 10.f);
-        ImGui::SliderFloat("Outline Hardness", &canvas.outline_hardness, 0.f, 1.f);
-    }
+    
+    ImGui::ColorEdit4("Outline Color", color3);
+    ImGui::SliderFloat("Outline Thickness", &canvas.outline_thickness, 0.f, 10.f);
+    ImGui::SliderFloat("Outline Hardness", &canvas.outline_hardness, 0.f, 1.f);
+    
     canvas.outline_c = glm::vec4(color3[0], color3[1], color3[2], color3[3]);
     canvas.use_outline = outline;
+    
     ImGui::End();
 }
 void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
@@ -652,10 +680,10 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, in
     ImGui::ColorEdit4("Color", color);
     static bool is_gradient = false;
     ImGui::Checkbox("Gradient", &is_gradient);
-    if (is_gradient)
-    {
-        ImGui::ColorEdit4("Second Color", color2);
-    }
+    ImGui::ColorEdit4("Second Color", color2);
+    ImGui::Checkbox("Use step gradient", &canvas.use_step_gradient_w);
+    ImGui::SliderInt("Steps", &canvas.steps_w, 1, 100);
+    
     canvas.water_c = glm::vec4(color[0], color[1], color[2], color[3]);
     canvas.use_secondary_wc = is_gradient;
     canvas.water_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
@@ -1021,7 +1049,9 @@ void AssetHandler::genDistribution(Canvas& canvas, float radius)
     std::vector<std::array<float, 2>> pos = thinks::PoissonDiskSampling(radius, kXMin, kXMax);
     number_of_points = pos.size();
     mpds_positions.clear();
+    asset_IDs.clear();
     mpds_positions.reserve(number_of_points);
+    asset_IDs.reserve(number_of_points);
 
     //int index = 0;
     //int posx, posy;
@@ -1036,30 +1066,44 @@ void AssetHandler::genDistribution(Canvas& canvas, float radius)
 
         // Setting up vertex attributes for instance positions
         glBindVertexArray(asset.vao);
-        glGenBuffers(1, &instanceVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+        glGenBuffers(1, &instancePos_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, instancePos_VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * number_of_points, &mpds_positions[0], GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glEnableVertexAttribArray(2);
-        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, instancePos_VBO);
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glVertexAttribDivisor(2, 1);
+
+        glGenBuffers(1, &instanceID_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, instanceID_VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(int) * number_of_points, &asset_IDs[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glEnableVertexAttribArray(3);
+        glBindBuffer(GL_ARRAY_BUFFER, instanceID_VBO);
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glVertexAttribDivisor(3, 1);
+
         glBindVertexArray(0);
         
     }
 
 }
 
-void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view)
+void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view, int isFB)
 {
     if (number_of_points && state.regenerate_buildings)
     {
         int index = 0;
         int posx, posy;
         asset_positions.clear();
+        asset_IDs.clear();
         asset_positions.reserve(number_of_points);
+        asset_IDs.reserve(number_of_points);
         for (size_t i = 0; i < number_of_points; ++i)
         {
             //(y * width + x)* channels
@@ -1070,11 +1114,12 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
             if ((int)canvas.buildings_rgba[index] != 0)
             {
                 asset_positions.push_back(mpds_positions[i]);
+                asset_IDs.push_back(mpds_positions[i][2]);
             }
 
         }
         number_of_assets = asset_positions.size();
-        //state.regenerate_buildings = false; PROBLEM
+        //state.regenerate_buildings = false; //PROBLEM
     }
     if (number_of_assets) 
     {
@@ -1089,12 +1134,16 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
         state.updVec(canvas.water_c, "u_water_color");
         state.updSampler(0, "asset_texture");
         state.updSampler(1, "background");
+        state.updInt(isFB, "u_isFB");
 
-        
         glBindVertexArray(asset.vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, instancePos_VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * number_of_assets, &asset_positions[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, instanceID_VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(int) * number_of_assets, &asset_IDs[0], GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 

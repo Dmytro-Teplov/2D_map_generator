@@ -47,7 +47,6 @@ public:
     double curs_x = 0.0f;
     double curs_y = 0.0f;
 
-    
 
     int batman_panel_width = 100;
     int robin_panel_width = 100;
@@ -81,9 +80,9 @@ public:
 
     glm::vec3 transform = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::mat4 view_relative = glm::mat4(1.0f);
-    //glm::mat4 model = glm::mat4(1.0f);//for future add this to the quad class
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
     glm::mat4 projection = glm::ortho(-1.0f, +1.0f, -1.0f, +1.0f, 0.1f, 100.0f);
+    const glm::mat4 default_view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
 
     int sel_tool = 0;//0 - move tool, 1 - terrain brush
 
@@ -97,7 +96,7 @@ public:
     void updVec(glm::vec3 vec, const char* vec_name);
     void updVec(glm::vec2 vec, const char* vec_name);
     void updVec(glm::vec4 vec, const char* vec_name);
-    void exportAsPNG(unsigned int textureID, int width, int height, const char* filename);
+    void exportAsPNG(unsigned int textureID, int width, int height, int c_width, int c_height, const char* filename, const char* filename2);
 };
 
 class Quad
@@ -142,6 +141,8 @@ public:
     void setShader(unsigned int shader_);
     void debug();
     void draw();
+    void draw_instance();
+
     void getReadyForDraw();
     void calculateSSBB(StateHandler& state);
     bool isInside(float posx, float posy);
@@ -162,6 +163,8 @@ public:
     int noise_compl = 6;
     float noise_1_scale = 4.0;
     float noise_2_scale = 1.0;
+    int steps_w = 1;
+    int steps_t = 1;
     glm::vec4 terrain_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
     glm::vec4 terrain_secondary_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
     glm::vec4 water_c = glm::vec4(0.66f, 0.76f, 0.85f, 1.0f);
@@ -172,6 +175,8 @@ public:
     bool use_outline = false;
     bool use_secondary_tc = false;
     bool use_secondary_wc = false;
+    bool use_step_gradient_w = false;
+    bool use_step_gradient_t = false;
 
 
     Canvas(int width, int height);
@@ -202,7 +207,9 @@ public:
 
     std::vector<glm::vec3> asset_positions;
     std::vector<glm::vec3> mpds_positions;
-    unsigned int instanceVBO = 0;
+    std::vector<int> asset_IDs;
+    unsigned int instancePos_VBO = 0;
+    unsigned int instanceID_VBO = 0;
     unsigned int bgTexture_ID = 0;
     Quad asset;
     float buildings_size = 1.0;
@@ -211,7 +218,7 @@ public:
     AssetHandler();
     void genDistribution(Canvas& canvas, float radius);
     void genAssets(Canvas& canvas, float radius);
-    void draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view);
+    void draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view, int isFB);
 //private:
 //    std::vector<std::array<float, 2>> sampling(Canvas& canvas, float radius);
 };

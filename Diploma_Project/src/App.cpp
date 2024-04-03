@@ -1,14 +1,6 @@
 
-//#include <imgui.h>
-
-//#include <GL/glew.h>
-//#include <GLFW/glfw3.h>
-//#include <fstream>
 #include <filesystem>
-//#include <iostream>
-
 #include "class_helpers.h"
-//#include <stb_image.h>
 
 
 StateHandler state;
@@ -19,10 +11,10 @@ glm::mat4 relative_cursor = glm::mat4(1.0f);
 
 Canvas canvas(100, 100);
 float prev_zoom = 1.0;
-glm::mat4 default_view = state.view;
 glm::vec3 global_transform = glm::vec3(0.0, 0.0, 0.0);
 
 void windowResizeHandler(int window_width, int window_height) {
+    canvas.calculateSSBB(state);
     glViewport(0, 0, window_width, window_height);
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -32,7 +24,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
         state.zoom = 0.1f;
     if (state.zoom > 25.0f)
         state.zoom = 25.0f;
-    state.view = glm::scale(default_view, glm::vec3(state.zoom, state.zoom, state.zoom));
+    state.view = glm::scale(state.default_view, glm::vec3(state.zoom, state.zoom, state.zoom));
     state.view = glm::translate(state.view, global_transform / glm::vec3(state.zoom));
     canvas.calculateSSBB(state);
 }
@@ -164,78 +156,22 @@ int main(void)
 
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
-
     
-    /*canvas.initialize(false);
-    canvas.createTexture(canvas_width, canvas_height);
-    canvas.debug();
-    canvas.setShader(terrain_shader);*/
-
     AssetHandler mountains;
 
     Quad frm_buffr(w_width, w_height);
-    /*frm_buffr.initialize(false);
-    frm_buffr.texture = canvas.fb_texture;
-    frm_buffr.debug();
-    frm_buffr.setShader(heightmap_shader);*/
 
     Quad brush(100,100);
-    /*brush.initialize(false);
-    brush.debug();
-    brush.setShader(cursor_shader);*/
 
     Quad ass(100, 100);
-    /*ass.initialize(false);
-    ass.debug();
-    ass.setShader(asset_shader);*/
 
     state.window = window;
 
-    ////SETTING UP TERRAIN SHADER
-
-    //state.attachShader(terrain_shader);
-    //canvas.setSize(state, canvas_width, canvas_height);
-    ////canvas.model = glm::scale(glm::mat4(1.0f), glm::vec3(canvas_width, canvas_height, 1.0f));
-    //state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
-    ////state.updMat(canvas.model, "model");
-    //state.updMat(state.view, "view");
-    //state.updMat(state.projection, "projection");
-    //state.updVec(sun, "u_sun_pos");
     float res = (float)canvas_width / canvas_height;
-    //state.updFloat(res, "u_BgRes");
-
-    ////SETTING UP CURSOR SHADER
-
-    //state.attachShader(cursor_shader);
-    //state.updMat(brush.model, "model");
-    //state.updMat(state.view, "view");
-    //state.updMat(state.projection, "projection");
-    //state.updVec(glm::vec2(w_width, w_height), "u_resolution");
-    //state.updVec(glm::vec2(0, 0), "u_pos");
-    //state.updFloat(state.brush_size, "u_circle_size");
-
-    ////SETTING UP ASSET SHADER
-
-    //state.attachShader(asset_shader);
-    //state.updMat(ass.model, "model");
-    //state.updMat(state.view, "view");
-    //state.updMat(state.projection, "projection");
-    ////res = (float)canvas_width / canvas_height;
-    //state.updFloat(res, "u_BgRes");
-
-    ////SETTING UP HEIGHTMAP GENERATION SHADER
-
-    //state.attachShader(heightmap_shader);
-    //state.updFloat(res, "u_BgRes");
-
-    //CREATING FRAME BUFFER OBJECT FOR TERRAIN GEN
 
     FrameBuffer heightmap_FB(w_width, w_height);
-    //canvas.texture = heightmap_FB.getResultTexture();
-
 
     FrameBuffer resulting_FB(w_width, w_height);
-    //mountains.bgTexture_ID = resulting_FB.getResultTexture();
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -255,7 +191,7 @@ int main(void)
     ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
     ui.setCustomStyle();
 
-   Painter painter;
+    Painter painter;
 
     //HATE THIS - needed to enable correct painting at the start.
     glfwGetWindowSize(window, &w_width, &w_height);
@@ -275,10 +211,6 @@ int main(void)
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
 
-    // Assets generation
-   /* mountains.genDistribution(canvas, 1.0 / state.density_1);
-    state.regenerate_buildings = true;*/
-
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
@@ -289,12 +221,11 @@ int main(void)
         glfwGetWindowSize(window, &w_width, &w_height);
         state.w_width = w_width;
         state.w_height = w_height;
-        glViewport(0, 0, w_width, w_height);
+        windowResizeHandler(w_width, w_height);
         glfwGetCursorPos(window, &state.curs_x, &state.curs_y);
         if(state.initial_start)
         { 
             startup_bg.draw();
-
 
             bool open_start = false;
             ImGui::Begin("Startup", &open_start, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground);
@@ -305,8 +236,8 @@ int main(void)
             ImGui::SetWindowSize(ImVec2(w_width, w_height));
             ImGui::SetWindowPos(ImVec2(0, 0));
             ImGuiStyle& style = ImGui::GetStyle();
-            ImGui::SetCursorPos(ImVec2(0, windowSize.y*0.2));
-            ui.middleLabel("Canvas");
+            ImGui::SetCursorPos(ImVec2(0, windowSize.y*0.3));
+            ui.middleLabel("Maps Generator");
 
 
             cursorPos = ImGui::GetCursorPos();
@@ -383,7 +314,7 @@ int main(void)
                 mountains.bgTexture_ID = resulting_FB.getResultTexture();
 
                 canvas.calculateSSBB(state);
-
+                // SETTING UP ASSETS
                 mountains.genDistribution(canvas, 1.0 / state.density_1);
                 state.regenerate_buildings = true;
             }
@@ -422,6 +353,10 @@ int main(void)
             state.updVec(canvas.water_secondary_c, "u_water_secondary_c");
             state.updInt((int)canvas.use_secondary_tc, "u_use_secondary_tc");
             state.updInt((int)canvas.use_secondary_wc, "u_use_secondary_wc");
+            state.updInt((int)canvas.use_step_gradient_w, "u_use_step_gradient_w");
+            state.updInt((int)canvas.use_step_gradient_t, "u_use_step_gradient_t");
+            state.updInt((int)canvas.steps_w, "u_steps_w");
+            state.updInt((int)canvas.steps_t, "u_steps_t");
             state.updFloat(canvas.outline_thickness, "u_outline_thickness");
             state.updFloat(canvas.outline_hardness, "u_outline_hardness");
             state.updFloat(canvas.use_outline, "u_use_outline");
@@ -450,13 +385,18 @@ int main(void)
             canvas.draw();
 
             state.updInt(1, "u_isFb");
-            state.updMat(glm::translate(default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), "transform_");
+            state.updMat(glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), "transform_");
 
 
             resulting_FB.updateSize(w_width, w_height);
             resulting_FB.bind();
             state.saveFbID(resulting_FB.getFbID());
             canvas.draw();
+
+            if (state.save)
+            {
+                mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
+            }
             resulting_FB.unBind();
             state.saveFbID(0);
 
@@ -465,13 +405,13 @@ int main(void)
             if (state.save)
             {
                 state.save = false;
-                state.exportAsPNG(resulting_FB.getResultTexture(), w_width, w_height, state.export_name_data);
+                state.exportAsPNG(resulting_FB.getResultTexture(), w_width, w_height,canvas_width,canvas_height ,state.export_name_data,"y.png");
                 //do smth with resolution!
             }
 
 
 
-            mountains.draw(state, canvas, asset_shader, glm::translate(default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)));
+            mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),0);
 
             //CURSOR DRAWING
             if (state.sel_tool != 0)
