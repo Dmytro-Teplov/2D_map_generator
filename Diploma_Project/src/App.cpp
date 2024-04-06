@@ -56,12 +56,12 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             }
         }
     }
-    else if (state.sel_tool == 1|| state.sel_tool == 2 || state.sel_tool == 3)
+    else if (state.sel_tool != 0)
     {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
         {
             glfwGetCursorPos(window, &state.last_x, &state.last_y);
-            if (canvas.isInside(state.last_x, state.last_y))
+            if (canvas.isInside(state.last_x, state.last_y)&& state.last_x> state.batman_panel_width && state.last_x<state.robin_panel_width)
             {
                 state.brush_pressed = true;
                 if(state.sel_tool == 3)
@@ -74,7 +74,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (state.sel_tool == 3)
                 state.regenerate_buildings = false;
         }
-        if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
         {
             //int w_width, w_height;
             glfwGetCursorPos(window, &state.last_x, &state.last_y);
@@ -86,7 +86,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
 
             }
         }
-        if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
         {
             /*double x, y;
             glfwGetCursorPos(window, &x, &y);*/
@@ -157,7 +157,9 @@ int main(void)
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
     
-    AssetHandler mountains;
+    AssetHandler buildings;
+    AssetHandler flora;
+    flora.asset_type = 1;
 
     Quad frm_buffr(w_width, w_height);
 
@@ -186,12 +188,13 @@ int main(void)
 
     double x = 0;
     double y = 0;
+    Painter painter;
 
-    UiHandler ui;
+    UiHandler ui(painter);
     ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
     ui.setCustomStyle();
 
-    Painter painter;
+    
 
     //HATE THIS - needed to enable correct painting at the start.
     glfwGetWindowSize(window, &w_width, &w_height);
@@ -219,6 +222,11 @@ int main(void)
         ImGui::NewFrame();
 
         glfwGetWindowSize(window, &w_width, &w_height);
+        if (state.save)
+        {
+            w_width = canvas_width;
+            w_height = canvas_height;
+        }
         state.w_width = w_width;
         state.w_height = w_height;
         windowResizeHandler(w_width, w_height);
@@ -311,12 +319,15 @@ int main(void)
 
                 canvas.texture = heightmap_FB.getResultTexture();
 
-                mountains.bgTexture_ID = resulting_FB.getResultTexture();
+                buildings.bgTexture_ID = resulting_FB.getResultTexture();
+                flora.bgTexture_ID = resulting_FB.getResultTexture();
 
                 canvas.calculateSSBB(state);
                 // SETTING UP ASSETS
-                mountains.genDistribution(canvas, 1.0 / state.density_1);
-                state.regenerate_buildings = true;
+                buildings.genDistribution(canvas, 1.0 / state.density_1);
+                flora.genDistribution(canvas, 1.0 / state.density_1);
+                buildings.regenerate_mpds = true;
+                flora.regenerate_mpds = true;
             }
             ImGui::End();
             ImGui::Render();
@@ -326,22 +337,21 @@ int main(void)
         }
         else
         {
-            //FRAME BUFFER GENERATION
+            // FRAME BUFFER GENERATION
             heightmap_FB.updateSize(w_width, w_height);
             heightmap_FB.bind();
             state.saveFbID(heightmap_FB.getFbID());
-
-
-            //updating terrain generation settings
+            // updating terrain generation settings
             state.updFloat(canvas.noise_compl, "u_complexity");
             state.updFloat(canvas.noise_1_scale, "u_scale1");
             state.updFloat(canvas.noise_2_scale, "u_scale2");
             frm_buffr.draw();
-
             heightmap_FB.unBind();
             state.saveFbID(0);
+            //---END FRAME BUFFER GENERATION
 
-            //CANVAS DRAWING 
+
+            // DRAWING CANVAS
             state.attachShader(terrain_shader);
             state.updInt(0, "u_isFb");
             state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
@@ -360,63 +370,62 @@ int main(void)
             state.updFloat(canvas.outline_thickness, "u_outline_thickness");
             state.updFloat(canvas.outline_hardness, "u_outline_hardness");
             state.updFloat(canvas.use_outline, "u_use_outline");
-
-
+            state.updFloat(0, "u_debug");
             if (state.reset)
             {
                 state.reset = false;
                 global_transform = glm::vec3(0.0, 0.0, 0.0);
             }
-
             state.view_relative = state.view;
             if (state.mouse_pressed)
             {
                 glfwGetCursorPos(window, &x, &y);
-
                 if (x > state.batman_panel_width)
                 {
                     state.transform = glm::vec3(2) * glm::vec3((x - state.last_x), -(y - state.last_y), 0.0f);
                     state.view_relative = glm::translate(state.view_relative, state.transform / glm::vec3(state.zoom));
                 }
-
             }
-
             state.updMat(state.view_relative, "view");
             canvas.draw();
-
             state.updInt(1, "u_isFb");
             state.updMat(glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), "transform_");
+            //---END DRAWING CANVAS
 
 
+            // DRAWING CANVAS TO TEXTURE
             resulting_FB.updateSize(w_width, w_height);
             resulting_FB.bind();
             state.saveFbID(resulting_FB.getFbID());
             canvas.draw();
-
             if (state.save)
             {
-                mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
+                buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
+                flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
             }
             resulting_FB.unBind();
             state.saveFbID(0);
+            //---END DRAWING CANVAS TO TEXTURE 
 
 
-            // IF USER PRESSED SAVE
+            // DRAWING ASSETS
+            buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
+            flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
+            //---END DRAWING ASSETS
+             
+
+            // SAVING MAP
             if (state.save)
             {
                 state.save = false;
-                state.exportAsPNG(resulting_FB.getResultTexture(), w_width, w_height,canvas_width,canvas_height ,state.export_name_data,"y.png");
-                //do smth with resolution!
+                state.exportAsPNG(resulting_FB.getResultTexture(), w_width, w_height,canvas_width,canvas_height ,state.export_name_data);
             }
+            //---END SAVING MAP
 
 
-
-            mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),0);
-
-            //CURSOR DRAWING
+            // CURSOR DRAWING
             if (state.sel_tool != 0)
             {
-
                 state.attachShader(cursor_shader);
                 relative_cursor = glm::translate(brush.model, glm::vec3(state.curs_x - w_width / 2.0, -state.curs_y + w_height / 2.0, 0) * glm::vec3(2));
                 relative_cursor = glm::scale(relative_cursor, glm::vec3(state.brush_size));
@@ -428,17 +437,48 @@ int main(void)
                 if (state.brush_pressed)
                 {
                     glfwGetCursorPos(window, &x, &y);
-
-                    painter.brush_size = state.brush_size;
+                    painter.brush_size = state.brush_size;// SHOULD NOT HAPPEN
                     painter.brush_hardness = state.brush_hardness;
-                    painter.paint(x, y, canvas, state);
+                    switch (state.sel_tool)
+                    {
+                    case 1:
+                        painter.paint(x, y, canvas, state);
+                        break;
+                    case 2:
+                        painter.paint(x, y, canvas, state);
+                        break;
+                    case 5:
+                        painter.paint(x, y, canvas, state);
+                        break;
+                    case 3:
+                        painter.paint(x, y, canvas, state, buildings);
+                        break;
+                    case 4:
+                        painter.paint(x, y, canvas, state, flora);
+                        break;
+                    }
                 }
             }
+            //---END CURSOR DRAWING
+
 
             state.attachShader(heightmap_shader);
-            //UI
-            ui.renderUI(state, canvas, mountains, w_width, w_height, canvas_width, canvas_height, res);
 
+
+            // UI
+            // BASED ON THE TOOL_ID CALL THIS FUNCTION WITH APPROPRIATE ASSET
+            switch (state.sel_tool)
+            {
+            case 3:
+                ui.renderUI(state, canvas, buildings, w_width, w_height, canvas_width, canvas_height, res);
+                break;
+            case 4:
+                ui.renderUI(state, canvas, flora, w_width, w_height, canvas_width, canvas_height, res);
+                break;
+            default:
+                ui.renderUI(state, canvas, buildings, w_width, w_height, canvas_width, canvas_height, res);
+            }
+            //---END UI
         }
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         /* Swap front and back buffers */

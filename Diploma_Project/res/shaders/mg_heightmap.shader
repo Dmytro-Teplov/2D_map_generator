@@ -9,7 +9,6 @@ out vec2 texcoord;
 
 void main()
 {
-    //gl_Position = projection * view * model * vec4(position.xyz, 1.0);
     gl_Position = position;
     texcoord = texCoord;
 };
@@ -151,59 +150,22 @@ void main()
     //get the blend mask
     vec4 proxy = texture2D(texture1, texcoord);
     
-    vec4 proxyRight = texture2D(texture1, vec2(dFdx(texcoord.x), 0.0));
-    vec4 proxyUp = texture2D(texture1, texcoord + vec2(0.0, dFdy(texcoord.y)));
+    //vec4 proxyRight = texture2D(texture1, vec2(dFdx(texcoord.x), 0.0));
+    //vec4 proxyUp = texture2D(texture1, texcoord + vec2(0.0, dFdy(texcoord.y)));
 
-    // Calculate the partial derivatives of the height map
-    //vec3 dpdx = vec3(1.0, 0.0, heightRight - height);
-    //vec3 dpdy = vec3(0.0, 1.0, heightUp - height);
-
-    // Calculate the normal by taking the cross product of the partial derivatives
-    //vec3 normal = normalize(cross(dpdx, dpdy));
-    
-    
     //get the noise
     vec4 water_noise = vec4(vec3(fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_Color.x)) + 0.5f, 1.f) * proxy.z;
     float terrain_noise_small = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale1); //figure out why whole noise is less than 0.5
     float terrain_noise_big = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale2);
-    //float terrain_noise_small2 = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * 2.0);
     
+    float terrain = clamp(proxy.x, 0.0, 1.0);
     //initialize the water and terrain mask
-    float terrain_mask = clamp((abs(terrain_noise_small - 0.5) + terrain_noise_big) / 2 + 0.5, 0.5, 1.0) * (1 - proxy.z);
-    float water_mask = clamp((terrain_noise_small + terrain_noise_big*4)/10, 0.0, 0.5) * proxy.z;
-    //terrain_mask = clamp(terrain_mask + water_mask, 0.0, 1.0);
+    float terrain_mask = clamp((abs(terrain_noise_small - 0.5) + terrain_noise_big), 0, 1.0) * (1 - proxy.z);
+    terrain_mask = mix(terrain_mask, terrain, terrain);
+    float water_mask = clamp((terrain_noise_small + terrain_noise_big * 4) / 10, 0.0, 0.5) * proxy.z;
 
-    //blend water and terrain
-    //if (terrain_mask < 0.45)//water
-    //    color = mix(vec4(0.2, 0.5, 0.5, 1.0), vec4(0.9, 0.8, 0.7, 1.0), terrain_mask / 0.45);
-    //if (terrain_mask >= 0.45)//send shore
-    //    color = mix(vec4(0.9, 0.8, 0.7, 1.0), vec4(0.7, 0.6, 0.5, 1.0), (terrain_mask - 0.45) / 0.15);
-    //if (terrain_mask > 0.6)//terrain
-    //    color = mix(vec4(0.5, 0.6, 0.3, 1.0), vec4(0.7, 0.8, 0.5, 1.0), (terrain_mask - 0.6) / 0.35);
-    //if (terrain_mask > 0.95)//rocky mountains
-    //    color = vec4(0.9, 0.9, 0.9, 1.0);
-    //color.rgb = vec3(terrain_mask);
-    //color.a = terrain_mask;
     color.r = terrain_mask;
     color.b = water_mask;
     color.g = terrain_noise_big;
     color.a = terrain_noise_small;
-     //blend water and terrain
-    //color = vec4(terrain_mask);
-    //color = vec4(1.0);
-    
-    
-    //foam
-    //if (terrain_mask > 0.25 && terrain_mask < 0.3 && (terrain_noise_big > 0.05 || terrain_noise_small > 0.15))
-        //color =  vec4(0.9, 0.9, 0.9, 1.0);
-    
-    
-
-    //paths
-    //if (proxy.g>0.01)
-        //color = mix(color, vec4(0.7, 0.6, 0.5, 1.0), proxy.g);
-    
-
-    
-
 };

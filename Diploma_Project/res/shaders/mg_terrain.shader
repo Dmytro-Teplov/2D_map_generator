@@ -55,6 +55,7 @@ uniform bool u_use_secondary_tc;
 uniform bool u_use_secondary_wc;
 uniform bool u_use_step_gradient_w;
 uniform bool u_use_step_gradient_t;
+uniform bool u_debug;
 
 
 #ifdef GL_ES
@@ -65,7 +66,7 @@ vec4 sample_terrain(vec2 texcoord)
 {
     vec4 t = texture2D(texture1, texcoord);
     vec4 res;
-    float terrain_mask = clamp(t.r + t.b, 0.0, 1.0);
+    float terrain_mask = clamp(t.r, 0.0, 1.0);
     if (terrain_mask <= 0.5)
         res = vec4(0.0, 0.0, 0.0, 1.0);
     if (terrain_mask > 0.5)
@@ -73,12 +74,23 @@ vec4 sample_terrain(vec2 texcoord)
     return res;
 }
 
+vec3 linearToSrgb(vec3 linearColor)
+{
+    vec3 srgbColor;
+    for (int i = 0; i < 3; ++i)
+    {
+        srgbColor[i] = linearColor[i] <= 0.0031308 ? linearColor[i] * 12.92 : pow(linearColor[i], 1.0 / 2.4) * 1.055 - 0.055;
+    }
+    return srgbColor;
+}
+
+
 void main()
 {   
     vec4 text = texture2D(texture1, texcoord);
         
     //blend water and terrain
-    float terrain_mask = clamp(text.r + text.b, 0.0, 1.0);
+    float terrain_mask = clamp(text.r, 0.0, 1.0);
     if (terrain_mask <= 0.5)
     { // WATER
         if (u_use_secondary_wc)
@@ -92,15 +104,12 @@ void main()
                     m = i * (1.f / u_steps_w);
                     m2 = i * (0.5f / u_steps_w);
                     color = mix(color, mix(u_water_color, u_water_secondary_c, m), step(m2, terrain_mask));
-
                 }
-
             }
             else
             {
                 color = mix(u_water_color, u_water_secondary_c, terrain_mask / 0.5);
             }
-
         }
         else
         {
@@ -108,9 +117,6 @@ void main()
         }
     }
             
-
-    //if (terrain_mask > 0.25 && terrain_mask < 0.3 && (text.g > 0.05 || text.a > 0.15))
-    //    color = vec4(0.9, 0.9, 0.9, 1.0);
     
     if (terrain_mask > 0.5)// TERRAIN
     {
@@ -130,8 +136,7 @@ void main()
             else
             {
                 color = mix(u_terrain_color, u_terrain_secondary_c, (terrain_mask - 0.5) / 0.5);
-            }
-                
+            } 
         }  
         else
         {
@@ -140,7 +145,6 @@ void main()
             
     }
         
-    
     // OUTLINE
     if (u_use_outline)
     {
@@ -156,9 +160,8 @@ void main()
                 vec2 offset = vec2(x, y * u_BgRes) * outlineWidth;
                 vec4 neighborColor = sample_terrain(texcoord + offset);
                 vec4 currColor = sample_terrain(texcoord);
-                if (neighborColor.r == 1.0f && currColor.r < 0.5f)
+                if (neighborColor.r == 1.0f && currColor.r <= 0.5f)
                 {
-                    
                     color = u_outline_color;
                 }
 
@@ -166,4 +169,8 @@ void main()
         }
     }
     color.a = 1.0f;
+    if (u_debug)
+    {
+        color.rgb = vec3(text.r);
+    }
 };

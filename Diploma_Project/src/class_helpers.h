@@ -54,6 +54,7 @@ public:
     float brush_hardness = 0.5;
 
     float density_1 = 0.01;
+    float density_2 = 0.01;
 
     int canvas_width = 1280;
     int canvas_height = 720;
@@ -71,12 +72,15 @@ public:
     bool regenerate_buildings = false;
     bool erase_buildings = false;
 
+    bool regenerate_flora = false;
+    bool erase_flora = false;
+
     bool mouse_pressed = false;
     bool brush_pressed = false;
     bool panel_hovered = false;
 
     const char* export_name = "";
-    char export_name_data[256] = "";
+    char export_name_data[256] = "map_project_1.png";
 
     glm::vec3 transform = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::mat4 view_relative = glm::mat4(1.0f);
@@ -96,7 +100,7 @@ public:
     void updVec(glm::vec3 vec, const char* vec_name);
     void updVec(glm::vec2 vec, const char* vec_name);
     void updVec(glm::vec4 vec, const char* vec_name);
-    void exportAsPNG(unsigned int textureID, int width, int height, int c_width, int c_height, const char* filename, const char* filename2);
+    void exportAsPNG(unsigned int textureID, int width, int height, int c_width, int c_height, const char* filename);
 };
 
 class Quad
@@ -212,10 +216,14 @@ public:
     unsigned int instanceID_VBO = 0;
     unsigned int bgTexture_ID = 0;
     Quad asset;
-    float buildings_size = 1.0;
+    float asset_size = 1.0;
+    bool regenerate_mpds = false;
+    bool erase_asset = false;
+    unsigned int asset_type = 0;
+
     //Quad* assets = new Quad[number_of_assets]();
     //AssetHandler();
-    AssetHandler();
+    AssetHandler(bool custom = false, const char* texture_path = " ");
     void genDistribution(Canvas& canvas, float radius);
     void genAssets(Canvas& canvas, float radius);
     void draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view, int isFB);
@@ -231,11 +239,14 @@ class Painter
 public:
     float brush_size = 10;
     float brush_hardness = 0.5;
+    bool explicit_height = false;
 
+    Painter();
     void paint(float posx, float posy, Canvas& canvas, StateHandler& state);
-    void paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height);
-    void paintWater(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height);
-    void paintBuildings(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, bool erase);
+    void paint(float posx, float posy, Canvas& canvas, StateHandler& state, AssetHandler& assets);
+    void paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode);
+    void paintAssets(unsigned char*& canvas_rgba, unsigned int type, int abs_posx, int abs_posy, int width, int height, bool erase);
+    Painter operator=(const Painter& p);
 };
 
 class UiHandler
@@ -245,14 +256,17 @@ class UiHandler
     float sliderPosX = 0;
     float sliderPosY = 0;
     float sliderWidth = 100;
+    Painter& p;
 public:
-
-    void renderUI(StateHandler& state, Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
-    void renderStartupUI(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, unsigned int shader_);
+    UiHandler();
+    explicit UiHandler(Painter& p_) : p(p_) {}
+    void renderUI(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height, float resolution);
+    void renderStartupUI(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height, unsigned int shader_);
     void setCustomStyle();
     void setCustomFont(const char regular[], const char bold[]);
     void middleLabel(const char* text);
-    void terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
-    void waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
-    void buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution);
+    void terrainPanel(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height);
+    void waterPanel(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height);
+    void buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height);
+    void floraPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height);
 };

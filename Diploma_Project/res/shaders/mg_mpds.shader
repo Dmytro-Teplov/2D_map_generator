@@ -15,6 +15,7 @@ uniform mat4 projection;
 
 uniform mat4 u_asset_view;
 uniform float u_asset_scale;
+uniform int u_asset_type;
 uniform int u_isFB;
 
 void main()
@@ -24,7 +25,7 @@ void main()
     vec4 something = projection * u_asset_view * model * vec4(pos + assetPos, 1.0);
     //gl_InstanceID = assetPos.z;
     int asset_num = asset_ID % 2;
-    texcoord = texCoord * vec2(0.125) + vec2(asset_num * 0.125, 0.750);
+    texcoord = texCoord * vec2(0.125) + vec2(asset_num * 0.125, 0.875 - 0.125 * u_asset_type);
     global_texcoord = vec2(something.x / 2 + 0.5, something.y / 2 + 0.5);    
     if (u_isFB == 0)
     {

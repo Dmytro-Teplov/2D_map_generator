@@ -329,32 +329,17 @@ void StateHandler::updVec(glm::vec4 vec, const char* vec_name)
     glUniform4fv(location, 1, glm::value_ptr(vec));
 }
 
-void StateHandler::exportAsPNG(unsigned int textureID, int width, int height,int c_width, int c_height,const char* filename, const char* filename2)
+void StateHandler::exportAsPNG(unsigned int textureID, int width, int height,int c_width, int c_height,const char* filename)
 {
     unsigned char* imageData_raw = (unsigned char*)malloc(width * height * 4);
-    unsigned char* imageData = (unsigned char*)malloc(c_width * c_height * 4);
     glBindTexture(GL_TEXTURE_2D, textureID);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData_raw);
     glBindTexture(GL_TEXTURE_2D, 0);
     stbi_flip_vertically_on_write(true);
-    int index = 0;
-    for (int i = 0; i < c_height; i++)
-    {
-        for (int j = width - c_width; j < width;j++)
-        {
-            index = c_width * i + j;
-            imageData[index] = imageData_raw[index];
-            imageData[index + 1] = imageData_raw[index + 1];
-            imageData[index + 2] = imageData_raw[index + 2];
-            imageData[index + 3] = imageData_raw[index + 3];
-        }
-    }
-    //stbir_resize_uint8()
-    stbi_write_png(filename, c_width, c_height, 4, imageData, c_width * 4);
-    stbi_write_png(filename2, width, height, 4, imageData_raw, width * 4);
+    stbi_write_png(filename, width, height, 4, imageData_raw, width * 4);
 }
 
-void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height, float resolution)
 {
     ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -383,12 +368,12 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
 
     if (ImGui::Button("Terrain", ImVec2(windowSize.x, 30)))
     {
-        state.sel_tool = 1;
+        state.sel_tool = 1;//MAKE SECOND TERRAIN TYPE
     }
-    if (ImGui::Button("Terrain 2", ImVec2(windowSize.x, 30)))
-    {
-        state.sel_tool = 4;
-    }
+    //if (ImGui::Button("Terrain 2", ImVec2(windowSize.x, 30)))
+    //{
+    //    state.sel_tool = 4;
+    //}
     if (ImGui::Button("Water", ImVec2(windowSize.x, 30)))
     {
         state.sel_tool = 2;
@@ -399,7 +384,12 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     }
     if (ImGui::Button("Flora", ImVec2(windowSize.x, 30)))
     {
+        state.sel_tool = 4;
     }
+    /*if (ImGui::Button("Paths", ImVec2(windowSize.x, 30)))
+    {
+        state.sel_tool = 5;
+    }*/
     middleLabel("Canvas");
     if (ImGui::Button("Reset", ImVec2(windowSize.x, 30)))
     {
@@ -417,13 +407,6 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     ImGui::InputInt("Noise Complexity", &canvas.noise_compl);
     ImGui::InputFloat("Noise 1 Scale", &canvas.noise_1_scale);
     ImGui::InputFloat("Noise 2 Scale", &canvas.noise_2_scale);
-    ImGui::SliderFloat("Town density", &state.density_1,0.01f,1.0f);
-
-    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
-    {
-        assets.genDistribution(canvas, 1.0/state.density_1);
-        state.regenerate_buildings = true;
-    }
     middleLabel("Export");
     if (ImGui::InputText("Name(with extension!)", state.export_name_data, IM_ARRAYSIZE(state.export_name_data)))
     {
@@ -453,23 +436,23 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
             state.robin_panel_width = w_width;
             break;
         case 1:
-            terrainPanel(state,canvas, w_width, w_height, canvas_width, canvas_height, resolution);
+            terrainPanel(state,canvas, w_width, w_height, canvas_width, canvas_height);
             break;
         case 2:
-            waterPanel(state,canvas, w_width, w_height, canvas_width, canvas_height, resolution);
+            waterPanel(state,canvas, w_width, w_height, canvas_width, canvas_height);
             break;
         case 3:
-            buildingsPanel(state, canvas, assets, w_width, w_height, canvas_width, canvas_height, resolution);
+            buildingsPanel(state, canvas, assets, w_width, w_height, canvas_width, canvas_height);
             break;
         case 4:
-            terrainPanel(state, canvas, w_width, w_height, canvas_width, canvas_height, resolution);
+            floraPanel(state, canvas, assets, w_width, w_height, canvas_width, canvas_height);
             break;
     }
     ImGui::Render();
     
 }
 
-void UiHandler::renderStartupUI(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, unsigned int shader_)
+void UiHandler::renderStartupUI(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height, unsigned int shader_)
 {
     unsigned int curr_shader = state.shader;
     bool open_start = false;
@@ -604,7 +587,7 @@ void UiHandler::middleLabel(const char* text)
     ImGui::PopFont();
 }
 
-void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height)
 {
     ImGui::Begin("Terrain Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -623,7 +606,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, 
     }
 
     middleLabel("Terrain Brush");
-    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);// SHOULD BE PAINTER CLASS
 
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
     middleLabel("Terrain Settings");
@@ -652,7 +635,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int& w_width, 
     
     ImGui::End();
 }
-void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height)
 {
     ImGui::Begin("Water Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -691,7 +674,7 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int& w_width, in
     //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::End();
 }
-void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int& w_width, int& w_height, int& canvas_width, int& canvas_height, float& resolution)
+void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height)
 {
     ImGui::Begin("Buildings Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -711,11 +694,51 @@ void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler
 
     middleLabel("Buildings Brush");
     ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
-    ImGui::Checkbox("Erase", &state.erase_buildings);
+    ImGui::Checkbox("Erase", &assets.erase_asset);
     middleLabel("Buildings Settings");
-    ImGui::SliderFloat("Buildings Size", &assets.buildings_size, 0.f, 15.f);
+    ImGui::SliderFloat("Buildings Size", &assets.asset_size, 0.f, 15.f);
+    ImGui::SliderFloat("Town density", &state.density_1, 0.01f, 1.0f);
+    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
+    {
+        assets.genDistribution(canvas, 1.0 / state.density_1);
+        assets.regenerate_mpds = true;
+    }
+
     ImGui::End();
 }
+void UiHandler::floraPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height)
+{
+    ImGui::Begin("Flora Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
+    ImGui::SetWindowPos(ImVec2(w_width - windowSize.x, 0));
+    state.robin_panel_width = w_width - windowSize.x;
+    if (ImGui::IsWindowHovered())
+    {
+        state.panel_hovered = true;
+        glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    else
+    {
+        if ((!state.panel_hovered) && state.sel_tool != 0)
+            glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
+
+    middleLabel("Flora Brush");
+    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::Checkbox("Erase", &assets.erase_asset);
+    middleLabel("Flora Settings");
+    ImGui::SliderFloat("Flora Size", &assets.asset_size, 0.f, 15.f);
+    ImGui::SliderFloat("Town density", &state.density_2, 0.01f, 1.0f);
+    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
+    {
+        assets.genDistribution(canvas, 1.0 / state.density_2);
+        assets.regenerate_mpds = true;
+    }
+
+    ImGui::End();
+}
+
 Canvas::Canvas(int width_, int height_)
 {
     width = width_;
@@ -927,6 +950,12 @@ void Canvas::createTexture(int width,int height)
     //texture_path = texture_path_;
 }
 
+Painter::Painter()
+{
+
+
+}
+
 void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
 {
     //std::cout << posx - canvas.ssbb[0][0] << "," << posy - canvas.ssbb[0][1] << std::endl;
@@ -938,18 +967,9 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
         //std::cout << canvas.fb_width << " " << canvas.fb_height << std::endl;
         brush_size = brush_size / state.zoom;
         //std::cout << canvas.ssbb[0][0] << " " << canvas.ssbb[0][1] << std::endl;
-        switch (state.sel_tool)
-        {
-        case 1:
-            paintTerrain(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
-            break;
-        case 2:
-            paintWater(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height);
-            break;
-        case 3:
-            paintBuildings(canvas.buildings_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, state.erase_buildings);
-            break;
-        }
+
+        paintCanvas(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, state.sel_tool);
+
         // Bind the texture object
         glBindTexture(GL_TEXTURE_2D, canvas.fb_texture);
 
@@ -957,11 +977,30 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
 
     }
-    
+}
+void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state, AssetHandler& assets)
+{
+    //std::cout << posx - canvas.ssbb[0][0] << "," << posy - canvas.ssbb[0][1] << std::endl;
+    if (canvas.isInside(posx, posy))
+    {
+        int abs_posx = (posx - canvas.ssbb[0][0]) / state.zoom;
+        int abs_posy = (canvas.fb_height - (posy - canvas.ssbb[0][1]) / state.zoom);
+        int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
+        //std::cout << canvas.fb_width << " " << canvas.fb_height << std::endl;
+        brush_size = brush_size / state.zoom;
+        //std::cout << canvas.ssbb[0][0] << " " << canvas.ssbb[0][1] << std::endl;
+        paintAssets(canvas.buildings_rgba, assets.asset_type, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, assets.erase_asset);
 
+        // Bind the texture object
+        glBindTexture(GL_TEXTURE_2D, canvas.fb_texture);
+
+        // Upload the image data to the texture object
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
+
+    }
 }
 
-void Painter::paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height)
+void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode)
 {
     //std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
     for (int i = -brush_size / 2; i < brush_size / 2; i++)
@@ -969,44 +1008,34 @@ void Painter::paintTerrain(unsigned char*& canvas_rgba,int abs_posx, int abs_pos
         for (int j = -brush_size / 2; j < brush_size / 2; j++)
         {
             int index = (width * (abs_posy + j) + abs_posx + i) * 4;
-            if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size) && (index + 2 < width * height * 4)&&(index>0))
+            if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size) && (index + 2 < width * height * 4) && (index > 0))
             {
-                float hardness = (1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size)*brush_hardness;
+                float hardness = (1 - ((float)std::pow(i * i + j * j, 0.5) * 2) / brush_size) * brush_hardness;
                 //std::cout << hardness;
-                
-                
-                canvas_rgba[index] = 255 * hardness + canvas_rgba[index] * (1 - hardness);
-                canvas_rgba[index + 1] = 0;
-                canvas_rgba[index + 2] = 255 - canvas_rgba[index];
 
-                //canvas.canvas_rgba[index + 2] = 0;
+                switch (mode)
+                {
+                case 1:
+                    canvas_rgba[index] = 255 * hardness + canvas_rgba[index] * (1 - hardness);
+                    canvas_rgba[index + 1] = 0;
+                    canvas_rgba[index + 2] = 255 - canvas_rgba[index];
+                    break;
+                case 2:
+                    canvas_rgba[index + 2] = 255 * hardness + canvas_rgba[index + 2] * (1 - hardness);
+                    canvas_rgba[index + 1] = 0;
+                    canvas_rgba[index] = 255 - canvas_rgba[index + 2];
+                    break;
+                
+                case 5:
+                    canvas_rgba[index + 1] = 255 * hardness + canvas_rgba[index + 1] * (1 - hardness);
+                    break;
+                }
+          
             }
         }
     }
 }
-void Painter::paintWater(unsigned char*& canvas_rgba, int abs_posx, int abs_posy, int width, int height)
-{
-    for (int i = -brush_size / 2; i < brush_size / 2; i++)
-    {
-        for (int j = -brush_size / 2; j < brush_size / 2; j++)
-        {
-            int index = (width * (abs_posy + j) + abs_posx + i) * 4;
-            if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size)&& (index + 2 < width * height * 4) && (index > 0))
-            {
-
-                float hardness = (1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size) * brush_hardness;
-                //std::cout << hardness;
-                
-                canvas_rgba[index + 2] = 255 * hardness + canvas_rgba[index + 2] * (1 - hardness);
-                canvas_rgba[index + 1] = 0;
-                canvas_rgba[index] = 255 - canvas_rgba[index + 2];
-                //canvas.canvas_rgba[index + 2] = 0;
-                
-            }
-        }
-    }
-}
-void Painter::paintBuildings(unsigned char*& buildings_rgba, int abs_posx, int abs_posy, int width, int height, bool erase)
+void Painter::paintAssets(unsigned char*& canvas_rgba, unsigned int type, int abs_posx, int abs_posy, int width, int height, bool erase)
 {
     //std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
     for (int i = -brush_size / 2; i < brush_size / 2; i++)
@@ -1017,15 +1046,41 @@ void Painter::paintBuildings(unsigned char*& buildings_rgba, int abs_posx, int a
             if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size) && (index + 2 < width * height * 4) && (index > 0))
             {
                 float hardness = (1 - (std::pow(i * i + j * j, 0.5) * 2) / brush_size) * brush_hardness;
-                buildings_rgba[index] = 255*(!erase);
+                canvas_rgba[index+type] = 255*(!erase);
             }
         }
     }
 }
 
+Painter Painter::operator=(const Painter& p)
+{
+    this->brush_hardness = p.brush_hardness;
+    this->brush_size = p.brush_size;
+    this->explicit_height = p.explicit_height;
+    return Painter();
 
-AssetHandler::AssetHandler() : asset(50, 50) {
-    asset.texture_path = "res/assets/default_assets.png";
+}
+AssetHandler::AssetHandler(bool custom,const char* texture_path) : asset(50, 50) {
+    if (custom)
+    {
+        asset.texture_path = texture_path;
+        int channels;
+        int width, height;
+        unsigned char* imageData = stbi_load(texture_path, &width, &height, &channels, 4);
+        if (imageData == nullptr) {
+            std::cout << stbi_failure_reason();
+            stbi_image_free(imageData);
+            asset.texture_path = "res/assets/default_assets.png";
+        }
+        else
+        {
+            stbi_image_free(imageData);
+        }
+    }
+    else 
+    {
+        asset.texture_path = "res/assets/default_assets.png";
+    }
     asset.initialize(true);
     asset.debug();
 }
@@ -1058,6 +1113,7 @@ void AssetHandler::genDistribution(Canvas& canvas, float radius)
     for (size_t i = 0; i < number_of_points; ++i)
     {
         mpds_positions.push_back(glm::vec3(pos[i][0], pos[i][1], i));
+        asset_IDs.push_back(i);
     }
     number_of_points = mpds_positions.size();
     if (number_of_points)
@@ -1096,7 +1152,7 @@ void AssetHandler::genDistribution(Canvas& canvas, float radius)
 
 void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view, int isFB)
 {
-    if (number_of_points && state.regenerate_buildings)
+    if (number_of_points && regenerate_mpds)
     {
         int index = 0;
         int posx, posy;
@@ -1111,7 +1167,7 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
             posy = (canvas.height + mpds_positions[i][1]) * 0.5;
             index = (canvas.width * posy + posx) * 4;
             //std::cout << (int)canvas.buildings_rgba[index] << std::endl;
-            if ((int)canvas.buildings_rgba[index] != 0)
+            if ((int)canvas.buildings_rgba[index+asset_type] != 0)
             {
                 asset_positions.push_back(mpds_positions[i]);
                 asset_IDs.push_back(mpds_positions[i][2]);
@@ -1130,11 +1186,12 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
         state.updMat(state.view_relative, "view");
         state.updMat(asset.model, "model");
         state.updMat(cust_view, "u_asset_view");
-        state.updFloat(10 * buildings_size, "u_asset_scale");
+        state.updFloat(10 * asset_size, "u_asset_scale");
         state.updVec(canvas.water_c, "u_water_color");
         state.updSampler(0, "asset_texture");
         state.updSampler(1, "background");
         state.updInt(isFB, "u_isFB");
+        state.updInt(asset_type, "u_asset_type");
 
         glBindVertexArray(asset.vao);
 
