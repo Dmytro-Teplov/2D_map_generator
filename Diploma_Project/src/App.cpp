@@ -439,6 +439,7 @@ int main(void)
                     glfwGetCursorPos(window, &x, &y);
                     painter.brush_size = state.brush_size;// SHOULD NOT HAPPEN
                     painter.brush_hardness = state.brush_hardness;
+                    painter.brush_opacity = state.brush_opacity;
                     switch (state.sel_tool)
                     {
                     case 1:

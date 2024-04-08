@@ -52,6 +52,7 @@ public:
     int robin_panel_width = 100;
     float brush_size = 10;
     float brush_hardness = 0.5;
+    float brush_opacity = 1.0;
 
     float density_1 = 0.01;
     float density_2 = 0.01;
@@ -239,6 +240,7 @@ class Painter
 public:
     float brush_size = 10;
     float brush_hardness = 0.5;
+    float brush_opacity = 1.0;
     bool explicit_height = false;
 
     Painter();
@@ -246,6 +248,7 @@ public:
     void paint(float posx, float posy, Canvas& canvas, StateHandler& state, AssetHandler& assets);
     void paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode);
     void paintAssets(unsigned char*& canvas_rgba, unsigned int type, int abs_posx, int abs_posy, int width, int height, bool erase);
+    float calcOpacity(float distance, float hardness);
     Painter operator=(const Painter& p);
 };
 

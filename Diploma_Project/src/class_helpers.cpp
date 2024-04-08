@@ -609,6 +609,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
     ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);// SHOULD BE PAINTER CLASS
 
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
+    ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
     middleLabel("Terrain Settings");
     static float color[4] = { 0.84f,0.76f,0.67f,1.0f };
     static float color2[4] = { 0.84f,0.76f,0.67f,1.0f };
@@ -657,6 +658,7 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int
     ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
 
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
+    ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
     middleLabel("Water Settings");
     static float color[4] = { 0.66f,0.76f,0.85f,1.0f };
     static float color2[4] = { 0.66f,0.76f,0.85f,1.0f };
@@ -999,29 +1001,34 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state,
 
     }
 }
-
+float Painter::calcOpacity(float distance, float hardness)
+{
+    if (distance / brush_size < hardness)
+        return 0.0;
+    return  ((distance/ brush_size)-hardness)/(1-hardness);
+}
 void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode)
 {
     //std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
-    for (int i = -brush_size / 2; i < brush_size / 2; i++)
+    for (int i = -brush_size / 2; i <= brush_size / 2; i++)
     {
-        for (int j = -brush_size / 2; j < brush_size / 2; j++)
+        for (int j = -brush_size / 2; j <= brush_size / 2; j++)
         {
             int index = (width * (abs_posy + j) + abs_posx + i) * 4;
-            if ((std::pow(i * i + j * j, 0.5) * 2 < brush_size) && (index + 2 < width * height * 4) && (index > 0))
+            if ((std::pow(i * i + j * j, 0.5) * 2 <= brush_size) && (index + 2 < width * height * 4) && (index > 0))
             {
-                float hardness = (1 - ((float)std::pow(i * i + j * j, 0.5) * 2) / brush_size) * brush_hardness;
-                //std::cout << hardness;
-
+                //float hardness = (1 - ((float)std::pow(i * i + j * j, 0.5) * 2) / brush_size);
+                float hardness =1 - calcOpacity((float)std::pow(i * i + j * j, 0.5) * 2 , brush_hardness);
+                //std::cout << hardness << std::endl;
                 switch (mode)
                 {
                 case 1:
-                    canvas_rgba[index] = 255 * hardness + canvas_rgba[index] * (1 - hardness);
+                    canvas_rgba[index] = 255 * hardness * brush_opacity + canvas_rgba[index] * (1 - hardness * brush_opacity);
                     canvas_rgba[index + 1] = 0;
                     canvas_rgba[index + 2] = 255 - canvas_rgba[index];
                     break;
                 case 2:
-                    canvas_rgba[index + 2] = 255 * hardness + canvas_rgba[index + 2] * (1 - hardness);
+                    canvas_rgba[index + 2] = 255 * hardness * brush_opacity + canvas_rgba[index + 2] * (1 - hardness * brush_opacity);
                     canvas_rgba[index + 1] = 0;
                     canvas_rgba[index] = 255 - canvas_rgba[index + 2];
                     break;
