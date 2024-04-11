@@ -14,6 +14,10 @@ float prev_zoom = 1.0;
 glm::vec3 global_transform = glm::vec3(0.0, 0.0, 0.0);
 
 void windowResizeHandler(int window_width, int window_height) {
+    //std::cout << "resized";
+    state.frustum.initialize(-(float)window_width, (float)window_width, -(float)window_height, (float)window_height, 0.1f, 100.0f);
+    state.frustum.adjust(1/state.zoom, global_transform / glm::vec3(state.zoom));
+    //state.regenerate_assets = true;
     canvas.calculateSSBB(state);
     glViewport(0, 0, window_width, window_height);
 }
@@ -26,6 +30,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
         state.zoom = 25.0f;
     state.view = glm::scale(state.default_view, glm::vec3(state.zoom, state.zoom, state.zoom));
     state.view = glm::translate(state.view, global_transform / glm::vec3(state.zoom));
+    state.frustum.adjust(1/state.zoom, global_transform / glm::vec3(state.zoom));
+    state.regenerate_assets = true;
     canvas.calculateSSBB(state);
 }
 void mouse_callback(GLFWwindow* window, int button, int action, int mods)
@@ -41,6 +47,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (state.last_x > state.batman_panel_width && state.last_x < state.robin_panel_width)
             {
                 state.mouse_pressed = true;
+                state.regenerate_assets = true;
             }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
@@ -50,9 +57,13 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             glfwGetWindowSize(window, &w_width, &w_height);
             if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
                 state.mouse_pressed = false;
+                state.regenerate_assets = false;
                 state.view = glm::translate(state.view, state.transform / glm::vec3(state.zoom));
+                state.frustum.adjust(state.transform / glm::vec3(state.zoom));
                 global_transform += state.transform;
                 canvas.calculateSSBB(state);
+                std::cout << state.frustum.Left[0]<< "," << state.frustum.Left[1] << "," << state.frustum.Left[2]<< std::endl;
+                std::cout << state.frustum.Right[0] << "," << state.frustum.Right[1] << "," << state.frustum.Right[2] << "\n\n";
             }
         }
     }
@@ -64,15 +75,16 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (canvas.isInside(state.last_x, state.last_y)&& state.last_x> state.batman_panel_width && state.last_x<state.robin_panel_width)
             {
                 state.brush_pressed = true;
-                if(state.sel_tool == 3)
-                    state.regenerate_buildings = true;
+                if(state.sel_tool > 2)
+                    state.regenerate_assets = true;
+                
             }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
         {
             state.brush_pressed = false;
-            if (state.sel_tool == 3)
-                state.regenerate_buildings = false;
+            if (state.sel_tool > 2)
+                state.regenerate_assets = false;
         }
         if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
         {
@@ -83,6 +95,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             if (state.last_x > state.batman_panel_width && state.last_x < state.robin_panel_width)
             {
                 state.mouse_pressed = true;
+                state.regenerate_assets = true;
 
             }
         }
@@ -93,7 +106,9 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
             glfwGetWindowSize(window, &w_width, &w_height);
             if (state.curs_x > state.batman_panel_width && state.curs_x < state.robin_panel_width) {
                 state.mouse_pressed = false;
+                state.regenerate_assets = false;
                 state.view = glm::translate(state.view, state.transform / glm::vec3(state.zoom));
+                state.frustum.adjust(state.transform / glm::vec3(state.zoom));
                 global_transform += state.transform;
                 canvas.calculateSSBB(state);
                
@@ -194,7 +209,6 @@ int main(void)
     ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
     ui.setCustomStyle();
 
-    
 
     //HATE THIS - needed to enable correct painting at the start.
     glfwGetWindowSize(window, &w_width, &w_height);
@@ -213,9 +227,26 @@ int main(void)
     state.updMat(startup_bg.model, "model");
     state.updMat(state.view, "view");
     state.updMat(state.projection, "projection");
-
+    double prevTime = 0.0;
+    double crntTime = 0.0;
+    double timeDiff;
+    unsigned int counter = 0;
     while (!glfwWindowShouldClose(window))
     {
+
+        crntTime = glfwGetTime();
+        timeDiff = crntTime - prevTime;
+        counter++;
+        if (timeDiff >= 1.0 / 30.0)
+        {
+            std::string FPS = std::to_string((1.0 / timeDiff) * counter);
+            std::string ms = std::to_string((timeDiff / counter)* 1000);
+            std::string newTit1e = "Magic Maps " + FPS + "FPS / +" + ms + "ms";
+            glfwSetWindowTitle(window, newTit1e.c_str());
+            prevTime = crntTime;
+            counter = 0;
+        }
+
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -236,6 +267,7 @@ int main(void)
             startup_bg.draw();
 
             bool open_start = false;
+
             ImGui::Begin("Startup", &open_start, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground);
             ImVec2 windowSize = ImGui::GetWindowSize();
             ImVec2 cursorPos = ImGui::GetCursorPos();
@@ -288,6 +320,7 @@ int main(void)
                 state.attachShader(terrain_shader);
                 canvas.setSize(state, canvas_width, canvas_height);
                 state.projection = glm::ortho(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
+                state.frustum.initialize(-(float)w_width, (float)w_width, -(float)w_height, (float)w_height, 0.1f, 100.0f);
                 state.updMat(state.view, "view");
                 state.updMat(state.projection, "projection");
                 state.updVec(sun, "u_sun_pos");
@@ -323,7 +356,9 @@ int main(void)
                 flora.bgTexture_ID = resulting_FB.getResultTexture();
 
                 canvas.calculateSSBB(state);
+
                 // SETTING UP ASSETS
+
                 buildings.genDistribution(canvas, 1.0 / state.density_1);
                 flora.genDistribution(canvas, 1.0 / state.density_1);
                 buildings.regenerate_mpds = true;
@@ -385,6 +420,8 @@ int main(void)
                     state.transform = glm::vec3(2) * glm::vec3((x - state.last_x), -(y - state.last_y), 0.0f);
                     state.view_relative = glm::translate(state.view_relative, state.transform / glm::vec3(state.zoom));
                 }
+                canvas.calculateSSBB(state);
+                //state.frustum.adjust()//REAL TIME FRUSTUM CALCULATION
             }
             state.updMat(state.view_relative, "view");
             canvas.draw();
@@ -409,8 +446,16 @@ int main(void)
 
 
             // DRAWING ASSETS
+            if (state.regenerate_assets)
+            {
+                buildings.regenerate_mpds = state.regenerate_assets;
+                flora.regenerate_mpds = state.regenerate_assets;
+                state.regenerate_assets = false;
+            }
             buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
             flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
+            
+
             //---END DRAWING ASSETS
              
 

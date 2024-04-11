@@ -27,6 +27,47 @@ static bool GLLogCall(const char* function, const char* file, int line)
     return true;
 }
 
+
+void Frustum::initialize(float left, float right, float bottom, float top, float near, float far)
+{
+    Top = glm::vec3(0, top,0);
+    Bottom = glm::vec3(0, bottom, 0);
+    Right = glm::vec3(right, 0, 0);
+    Left = glm::vec3(left, 0, 0);
+    Near = glm::vec3(0, 0, near);
+    Far = glm::vec3(0, 0, far);
+}
+
+void Frustum::adjust(float zoom, glm::vec3 transform)
+{
+    Top *= zoom;
+    Bottom *= zoom;
+    Right *= zoom;
+    Left *= zoom;
+    Near *= zoom;
+    Far *= zoom;
+
+    Top -= transform;
+    Bottom -= transform;
+    Right -= transform;
+    Left -= transform;
+    Near -= transform;
+    Far -= transform;
+
+}
+
+void Frustum::adjust(glm::vec3 transform)
+{
+    Top -= transform;
+    Bottom -= transform;
+    Right -= transform;
+    Left -= transform;
+    Near -= transform;
+    Far -= transform;
+}
+
+
+
 Quad::Quad()
 {
     for (int i = 0; i < 20; i++) {
@@ -1156,7 +1197,16 @@ void AssetHandler::genDistribution(Canvas& canvas, float radius)
     }
 
 }
+bool AssetHandler::isVisible(glm::vec3 asset_pos, StateHandler& state)
+{
+    glm::vec2 p = glm::vec2(asset_pos[0], asset_pos[1]);
+    glm::mat2 bb(glm::vec2(-5*asset_size, 5 * asset_size) + p, glm::vec2(-5 * asset_size, 5 * asset_size) + p);
 
+    if (state.frustum.Left[0] < p[0] && state.frustum.Right[0] > p[0] && state.frustum.Top[1] > p[1] && state.frustum.Bottom[1] < p[1])
+        return true;
+    else
+        return false;
+}
 void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view, int isFB)
 {
     if (number_of_points && regenerate_mpds)
@@ -1174,7 +1224,7 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
             posy = (canvas.height + mpds_positions[i][1]) * 0.5;
             index = (canvas.width * posy + posx) * 4;
             //std::cout << (int)canvas.buildings_rgba[index] << std::endl;
-            if ((int)canvas.buildings_rgba[index+asset_type] != 0)
+            if ((int)canvas.buildings_rgba[index+asset_type] != 0 && isVisible(mpds_positions[i],state))
             {
                 asset_positions.push_back(mpds_positions[i]);
                 asset_IDs.push_back(mpds_positions[i][2]);
@@ -1182,7 +1232,10 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
 
         }
         number_of_assets = asset_positions.size();
-        //state.regenerate_buildings = false; //PROBLEM
+        if (!state.brush_pressed&& !state.mouse_pressed) {
+            regenerate_mpds = false;
+        }
+        std::cout << "-";
     }
     if (number_of_assets) 
     {
@@ -1228,3 +1281,4 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
     
     
 }
+

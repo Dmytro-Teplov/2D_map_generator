@@ -26,13 +26,29 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 
+struct Frustum
+{
+    glm::vec3 Near;
+    glm::vec3 Far;
 
+    glm::vec3 Right;
+    glm::vec3 Left;
+
+    glm::vec3 Top;
+    glm::vec3 Bottom;
+
+    void initialize( float left, float right, float bottom,float top, float near, float far);
+    void adjust(float zoom, glm::vec3 transform);
+    void adjust(glm::vec3 transform);
+
+};
 
 class StateHandler
 {
 
 public:
     GLFWwindow* window;
+    Frustum frustum;
 
     unsigned int shader = 0;
     unsigned int framebuffer = 0;
@@ -70,7 +86,7 @@ public:
     bool save = false;
     bool reset = false;
 
-    bool regenerate_buildings = false;
+    bool regenerate_assets = false;
     bool erase_buildings = false;
 
     bool regenerate_flora = false;
@@ -193,16 +209,6 @@ public:
 
 
  
-class Asset
-{
-    unsigned int id;
-    unsigned int texture_id;
-    float x = 0;
-    float y = 0;
-    Asset(float x, float y);
-    //void draw(StateHandler& state, unsigned int shader_);
-    //void createAsset(float x,float y);
-};
 
 class AssetHandler
 {
@@ -228,8 +234,7 @@ public:
     void genDistribution(Canvas& canvas, float radius);
     void genAssets(Canvas& canvas, float radius);
     void draw(StateHandler& state, Canvas& canvas, unsigned int shader_, glm::mat4 cust_view, int isFB);
-//private:
-//    std::vector<std::array<float, 2>> sampling(Canvas& canvas, float radius);
+    bool isVisible(glm::vec3 asset_pos, StateHandler& state);
 };
 
 class Painter
