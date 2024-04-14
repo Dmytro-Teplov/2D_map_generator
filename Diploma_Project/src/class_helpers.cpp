@@ -456,7 +456,10 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     {
         state.save = true;
     }
-
+    if (ImGui::Button("Save project state", ImVec2(windowSize.x, 30)))
+    {
+        state.save_to_bin = true;
+    }
     sliderPosX = (windowSize.x - ImGui::CalcTextSize("Zoom").x) * 0.5;
     sliderPosY = windowSize.y - ImGui::GetTextLineHeightWithSpacing() * 2;
     
@@ -652,29 +655,40 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
     ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
     middleLabel("Terrain Settings");
-    static float color[4] = { 0.84f,0.76f,0.67f,1.0f };
-    static float color2[4] = { 0.84f,0.76f,0.67f,1.0f };
-    static float color3[4] = { 0.84f,0.76f,0.67f,1.0f };
+    
+    float color[4] = { 0 };
+    float color2[4] = { 0 };
+    float color3[4] = { 0 };
+    for (auto i = 0; i < 4; ++i)
+    {
+        color[i] = canvas.terrain_c[i];
+        color2[i] = canvas.terrain_secondary_c[i];
+        color3[i] = canvas.outline_c[i];
+    }
+    
+
     ImGui::ColorEdit4("Color", color);
-    static bool is_gradient = false;
-    static bool outline = false;
-    ImGui::Checkbox("Gradient", &is_gradient);
+    /*static bool is_gradient = false;
+    static bool outline = false;*/
+    ImGui::Checkbox("Gradient", &canvas.use_secondary_tc);
     ImGui::ColorEdit4("Second Color", color2);
     ImGui::Checkbox("Use step gradient", &canvas.use_step_gradient_t);
     ImGui::SliderInt("Steps", &canvas.steps_t, 1, 100);
     
-    canvas.use_secondary_tc = is_gradient;
-    canvas.terrain_c = glm::vec4(color[0], color[1], color[2], color[3]);
-    canvas.terrain_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
-    ImGui::Checkbox("Outline", &outline);
+    // = is_gradient;
+    
+    
+    ImGui::Checkbox("Outline", &canvas.use_outline);
     
     ImGui::ColorEdit4("Outline Color", color3);
     ImGui::SliderFloat("Outline Thickness", &canvas.outline_thickness, 0.f, 10.f);
     ImGui::SliderFloat("Outline Hardness", &canvas.outline_hardness, 0.f, 1.f);
-    
+
+    canvas.terrain_c = glm::vec4(color[0], color[1], color[2], color[3]);
+    canvas.terrain_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     canvas.outline_c = glm::vec4(color3[0], color3[1], color3[2], color3[3]);
-    canvas.use_outline = outline;
     
+     
     ImGui::End();
 }
 void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height)
@@ -701,20 +715,21 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
     ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
     middleLabel("Water Settings");
-    static float color[4] = { 0.66f,0.76f,0.85f,1.0f };
-    static float color2[4] = { 0.66f,0.76f,0.85f,1.0f };
+    float color[4] = { 0 };
+    float color2[4] = { 0 };
+    for (auto i = 0; i < 4; ++i)
+    {
+        color[i] = canvas.water_c[i];
+        color2[i] = canvas.water_secondary_c[i];
+    }
     ImGui::ColorEdit4("Color", color);
-    static bool is_gradient = false;
-    ImGui::Checkbox("Gradient", &is_gradient);
+    ImGui::Checkbox("Gradient", &canvas.use_secondary_wc);
     ImGui::ColorEdit4("Second Color", color2);
     ImGui::Checkbox("Use step gradient", &canvas.use_step_gradient_w);
     ImGui::SliderInt("Steps", &canvas.steps_w, 1, 100);
     
     canvas.water_c = glm::vec4(color[0], color[1], color[2], color[3]);
-    canvas.use_secondary_wc = is_gradient;
     canvas.water_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
-    //std::cout << glm::to_string(canvas.water_c) << std::endl;
-    //canvas.terrain_c2 = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::End();
 }
 void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height)
@@ -975,24 +990,25 @@ void Canvas::createTexture(int width,int height)
     fb_height = height;
     canvas_rgba = imageData;
     buildings_rgba = maskData;
-    //unsigned int texture;
+
     glGenTextures(1, &fb_texture);
     glActiveTexture(GL_TEXTURE0);
 
-    // Bind the texture object
     glBindTexture(GL_TEXTURE_2D, fb_texture);
 
-    // Upload the image data to the texture object
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
 
-
-    // Specify the texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
-    //texture_path = texture_path_;
-}
 
+}
+void Canvas::uploadFbTexture()
+{
+    glBindTexture(GL_TEXTURE_2D, fb_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fb_width, fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas_rgba);
+    glBindTexture(GL_TEXTURE_2D, fb_texture);
+}
 Painter::Painter()
 {
 
@@ -1013,10 +1029,8 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
 
         paintCanvas(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, state.sel_tool);
 
-        // Bind the texture object
         glBindTexture(GL_TEXTURE_2D, canvas.fb_texture);
 
-        // Upload the image data to the texture object
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
 
     }
@@ -1235,7 +1249,7 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
         if (!state.brush_pressed&& !state.mouse_pressed) {
             regenerate_mpds = false;
         }
-        std::cout << "-";
+        //std::cout << "-";
     }
     if (number_of_assets) 
     {

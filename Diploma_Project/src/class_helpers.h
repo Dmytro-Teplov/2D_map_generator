@@ -1,5 +1,5 @@
 #pragma once
-
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
@@ -85,12 +85,10 @@ public:
 
     bool save = false;
     bool reset = false;
+    bool save_to_bin = false;
+    bool load_from_bin = false;
 
     bool regenerate_assets = false;
-    bool erase_buildings = false;
-
-    bool regenerate_flora = false;
-    bool erase_flora = false;
 
     bool mouse_pressed = false;
     bool brush_pressed = false;
@@ -118,6 +116,7 @@ public:
     void updVec(glm::vec2 vec, const char* vec_name);
     void updVec(glm::vec4 vec, const char* vec_name);
     void exportAsPNG(unsigned int textureID, int width, int height, int c_width, int c_height, const char* filename);
+    
 };
 
 class Quad
@@ -205,6 +204,7 @@ public:
     void setSize(StateHandler& state, int width_, int height_);
     void setTexture(const char* texture_path_);
     void createTexture(int width, int height);
+    void uploadFbTexture();
 };
 
 

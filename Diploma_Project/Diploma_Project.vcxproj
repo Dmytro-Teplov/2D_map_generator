@@ -29,11 +29,13 @@
     <ClCompile Include="src\App.cpp" />
     <ClCompile Include="src\class_helpers.cpp" />
     <ClCompile Include="src\GL_helpers.cpp" />
+    <ClCompile Include="src\serialization.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\stb\stb_image_write.h" />
     <ClInclude Include="src\GL_helpers.h" />
     <ClInclude Include="src\class_helpers.h" />
+    <ClInclude Include="src\serialization.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

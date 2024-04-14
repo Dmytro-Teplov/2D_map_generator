@@ -1,7 +1,10 @@
 
 #include <filesystem>
 #include "class_helpers.h"
+#include "serialization.h"
 
+std::string version = "1.0";
+std::string file_version = "1.0";
 
 StateHandler state;
 glm::vec3 sun = glm::vec3(1.0, 1.0, 1.0);
@@ -62,8 +65,8 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods)
                 state.frustum.adjust(state.transform / glm::vec3(state.zoom));
                 global_transform += state.transform;
                 canvas.calculateSSBB(state);
-                std::cout << state.frustum.Left[0]<< "," << state.frustum.Left[1] << "," << state.frustum.Left[2]<< std::endl;
-                std::cout << state.frustum.Right[0] << "," << state.frustum.Right[1] << "," << state.frustum.Right[2] << "\n\n";
+                //std::cout << state.frustum.Left[0]<< "," << state.frustum.Left[1] << "," << state.frustum.Left[2]<< std::endl;
+                //std::cout << state.frustum.Right[0] << "," << state.frustum.Right[1] << "," << state.frustum.Right[2] << "\n\n";
             }
         }
     }
@@ -130,7 +133,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    /* Create a windowed mode window and its OpenGL context */
+    /* C reate a windowed mode window and its OpenGL context */
     
     float canvas_aspect_ratio = 1.0;
     int canvas_width = 1000, canvas_height = 500;
@@ -231,6 +234,12 @@ int main(void)
     double crntTime = 0.0;
     double timeDiff;
     unsigned int counter = 0;
+
+    Archive archive;
+    
+    const char* prevstate = archive.checkLastState();
+
+
     while (!glfwWindowShouldClose(window))
     {
 
@@ -291,16 +300,43 @@ int main(void)
             ImGui::PushItemWidth(windowSize.x * 0.4);
             ImGui::InputInt("canvas height", &canvas_height, 0);
 
+
+            
+           
+            ImVec2 textSize = ImGui::CalcTextSize("Load saved state");
             cursorPos = ImGui::GetCursorPos();
             ImGui::SetCursorPos(ImVec2(windowSize.x * 0.4, cursorPos.y));
-            if (ImGui::Button("Change the size", ImVec2(windowSize.x * 0.2, windowSize.y*0.1)))
+            ImGui::Checkbox("Load saved state", &state.load_from_bin);
+
+            if (prevstate[0] == 'n')
+            {
+                ImGui::SetCursorPos(ImVec2(windowSize.x * 0.4 + textSize[0] + 40.f, cursorPos.y + 2.f));
+                ImGui::TextColored({ 1.0,0,0,1 }, prevstate);
+            }
+            else
+            {
+                ImGui::SetCursorPos(ImVec2(windowSize.x * 0.4 + textSize[0] + 40.f, cursorPos.y + 2.f));
+                ImGui::TextColored({ 0,1.0,0,1 }, prevstate);
+            }
+            
+
+
+
+            cursorPos = ImGui::GetCursorPos();
+            ImGui::SetCursorPos(ImVec2(windowSize.x * 0.4, cursorPos.y));
+            if (ImGui::Button("Start", ImVec2(windowSize.x * 0.2, windowSize.y*0.1)))
             {
                 state.initial_start = false;
 
                 canvas.initialize(false);
                 canvas.createTexture(canvas_width, canvas_height);
+                
                 canvas.debug();
                 canvas.setShader(terrain_shader);
+
+
+                
+
 
                 frm_buffr.initialize(false);
                 frm_buffr.texture = canvas.fb_texture;
@@ -326,6 +362,60 @@ int main(void)
                 state.updVec(sun, "u_sun_pos");
                 res = (float)canvas_width / canvas_height;
                 state.updFloat(res, "u_BgRes");
+
+                if (state.load_from_bin)
+                {
+                    //std::cout << "\n" << (int)canvas.canvas_rgba << "BEFORE\n";
+                    archive.startDeserialization();
+
+                    
+                    archive.deserialize(file_version);
+
+                   /* if (file_version != version)
+                    {
+                        std::cout << file_version <<" version of the file" << "\n";
+                        std::cout << version <<" version of the program" <<"\n";
+                        continue;
+                    }*/
+
+                    archive.deserialize(state.brush_size);
+                    archive.deserialize(state.brush_hardness);
+                    archive.deserialize(state.brush_opacity);
+
+                    archive.deserialize(canvas.noise_compl);
+                    archive.deserialize(canvas.noise_1_scale);
+                    archive.deserialize(canvas.noise_2_scale);
+
+                    archive.deserialize(canvas.outline_thickness);
+                    archive.deserialize(canvas.outline_hardness);
+
+                    archive.deserialize(canvas.steps_w);
+                    archive.deserialize(canvas.steps_t);
+
+                    archive.deserialize(canvas.use_outline);
+                    archive.deserialize(canvas.use_secondary_tc);
+                    archive.deserialize(canvas.use_secondary_wc);
+                    archive.deserialize(canvas.use_step_gradient_w);
+                    archive.deserialize(canvas.use_step_gradient_t);
+
+                    archive.deserialize(canvas.terrain_c);
+                    archive.deserialize(canvas.terrain_secondary_c);
+                    archive.deserialize(canvas.outline_c);
+
+                    archive.deserialize(canvas.water_c);
+                    archive.deserialize(canvas.water_secondary_c);
+
+                    archive.deserialize(state.sel_tool);
+                    archive.deserialize(state.density_1);
+                    archive.deserialize(state.density_2);
+                    archive.deserialize(canvas.canvas_rgba, canvas_width * canvas_height * 4);
+                    archive.deserialize(canvas.buildings_rgba, canvas_width * canvas_height * 4);
+                    archive.stopDeserialization();
+                    canvas.uploadFbTexture();
+                    state.regenerate_assets = true;
+                    std::cout << "\n" << "AFTER\n";
+                    //state.load_from_bin = false;
+                }
 
                 //SETTING UP CURSOR SHADER
 
@@ -360,9 +450,12 @@ int main(void)
                 // SETTING UP ASSETS
 
                 buildings.genDistribution(canvas, 1.0 / state.density_1);
-                flora.genDistribution(canvas, 1.0 / state.density_1);
+                flora.genDistribution(canvas, 1.0 / state.density_2);
                 buildings.regenerate_mpds = true;
                 flora.regenerate_mpds = true;
+
+                
+                
             }
             ImGui::End();
             ImGui::Render();
@@ -376,6 +469,11 @@ int main(void)
             heightmap_FB.updateSize(w_width, w_height);
             heightmap_FB.bind();
             state.saveFbID(heightmap_FB.getFbID());
+
+            //Fail-safe
+            if (canvas.noise_compl > 100)
+                canvas.noise_compl = 6;
+
             // updating terrain generation settings
             state.updFloat(canvas.noise_compl, "u_complexity");
             state.updFloat(canvas.noise_1_scale, "u_scale1");
@@ -468,6 +566,49 @@ int main(void)
             //---END SAVING MAP
 
 
+            // SAVING STATE
+            if (state.save_to_bin)
+            {
+                state.save_to_bin = false;
+                archive.startSerialization();
+                archive.serialize(version);
+                archive.serialize(state.brush_size);
+                archive.serialize(state.brush_hardness);
+                archive.serialize(state.brush_opacity);
+
+                archive.serialize(canvas.noise_compl);
+                archive.serialize(canvas.noise_1_scale);
+                archive.serialize(canvas.noise_2_scale);
+
+                archive.serialize(canvas.outline_thickness);
+                archive.serialize(canvas.outline_hardness);
+
+                archive.serialize(canvas.steps_w);
+                archive.serialize(canvas.steps_t);
+
+                archive.serialize(canvas.use_outline);
+                archive.serialize(canvas.use_secondary_tc);
+                archive.serialize(canvas.use_secondary_wc);
+                archive.serialize(canvas.use_step_gradient_w);
+                archive.serialize(canvas.use_step_gradient_t);
+
+                archive.serialize(canvas.terrain_c);
+                archive.serialize(canvas.terrain_secondary_c);
+                archive.serialize(canvas.outline_c);
+
+                archive.serialize(canvas.water_c);
+                archive.serialize(canvas.water_secondary_c);
+
+                archive.serialize(state.sel_tool);
+                archive.serialize(state.density_1);
+                archive.serialize(state.density_2);
+                archive.serialize(canvas.canvas_rgba,canvas_width*canvas_height*4);
+                archive.serialize(canvas.buildings_rgba,canvas_width*canvas_height*4);
+                archive.stopSerialization();
+            }
+            //---END SAVING STATE
+
+
             // CURSOR DRAWING
             if (state.sel_tool != 0)
             {
@@ -525,6 +666,8 @@ int main(void)
                 ui.renderUI(state, canvas, buildings, w_width, w_height, canvas_width, canvas_height, res);
             }
             //---END UI
+            state.load_from_bin = false;
+            
         }
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         /* Swap front and back buffers */

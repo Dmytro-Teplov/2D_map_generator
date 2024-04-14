@@ -22,6 +22,7 @@ void main()
 #version 330 core
 
 in vec2 texcoord;
+//in vec4 gl_FragCoord;
 
 out vec4 color;
 
@@ -35,9 +36,22 @@ precision mediump float;
 #endif
 
 
+float getColorBasedOnDistance(vec2 fragCoord)
+{
+    
+    vec2 center = vec2(0.0, 0.0);
+    float distance = length(fragCoord - center);
+
+    float normalizedDistance = distance / sqrt(2.0); 
+
+    float color = mix(0.0, 1.0, normalizedDistance);
+
+    return color;
+}
+
 void main()
 {   
+    float brightness = getColorBasedOnDistance(texcoord);
     vec4 t = texture2D(bg_texture, texcoord);
-    color = t; //vec4(1.0f);
-    
+    color = t * brightness; 
 };
