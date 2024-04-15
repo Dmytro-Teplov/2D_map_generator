@@ -34,6 +34,7 @@ uniform float u_scale2;
 precision mediump float;
 #endif
 
+
 vec2 randomGradient(vec2 p)
 {
     p = p + 0.02;
@@ -43,14 +44,10 @@ vec2 randomGradient(vec2 p)
     gradient = sin(gradient);
     gradient = gradient * 43758.5453;
 
-  // part 4.5 - update noise function with time
     gradient = sin(gradient);
     return gradient;
 
-  // gradient = sin(gradient);
-  // return gradient;
 }
-
 
 float sdfCircle(in vec2 p, in float r)
 {
@@ -73,58 +70,39 @@ vec2 cubic(vec2 p)
     return p * p * (3.0 - p * 2.0);
 }
 
-vec2 quintic(vec2 p)
-{
-    return p * p * p * (10.0 + p * (-15.0 + p * 6.0));
-}
+
 float perlin_noise(vec2 uv)
 {
     vec3 black = vec3(0.0);
     vec3 white = vec3(1.0);
     vec3 color = black;
 
-  // part 1 - set up a grid of cells
     uv = uv * 4.0;
     vec2 gridId = floor(uv);
     vec2 gridUv = fract(uv);
     color = vec3(gridId, 0.0);
     color = vec3(gridUv, 0.0);
 
-  // part 2.1 - start by finding the coords of grid corners
     vec2 bl = gridId + vec2(0.0, 0.0);
     vec2 br = gridId + vec2(1.0, 0.0);
     vec2 tl = gridId + vec2(0.0, 1.0);
     vec2 tr = gridId + vec2(1.0, 1.0);
 
-  // part 2.2 - find random gradient for each grid corner
     vec2 gradBl = randomGradient(bl);
     vec2 gradBr = randomGradient(br);
     vec2 gradTl = randomGradient(tl);
     vec2 gradTr = randomGradient(tr);
 
-  // part 2.3 - visualize gradients (for demo purposes)
-   
-  // part 3.1 - visualize a single center pixel on each grid cell
-   
-
-  // part 3.2 - find distance from current pixel to each grid corner
     vec2 distFromPixelToBl = gridUv - vec2(0.0, 0.0);
     vec2 distFromPixelToBr = gridUv - vec2(1.0, 0.0);
     vec2 distFromPixelToTl = gridUv - vec2(0.0, 1.0);
     vec2 distFromPixelToTr = gridUv - vec2(1.0, 1.0);
 
-  // part 4.1 - calculate the dot products of gradients + distances
     float dotBl = dot(gradBl, distFromPixelToBl);
     float dotBr = dot(gradBr, distFromPixelToBr);
     float dotTl = dot(gradTl, distFromPixelToTl);
     float dotTr = dot(gradTr, distFromPixelToTr);
-
-  // part 4.4 - smooth out gridUvs
-    //gridUv = smoothstep(0.0, 1.0, gridUv);
     gridUv = cubic(gridUv);
-    //gridUv = quintic(gridUv);
-
-  // part 4.2 - perform linear interpolation between 4 dot products
     float b = mix(dotBl, dotBr, gridUv.x);
     float t = mix(dotTl, dotTr, gridUv.x);
     float perlin = mix(b, t, gridUv.y);
@@ -146,21 +124,24 @@ float fBm(vec2 p)
 
 
 void main()
-{   
+{
     //get the blend mask
-    vec4 proxy = texture2D(texture1, texcoord);
+    vec4 proxy = texture2D( texture1, texcoord);
     
     //vec4 proxyRight = texture2D(texture1, vec2(dFdx(texcoord.x), 0.0));
     //vec4 proxyUp = texture2D(texture1, texcoord + vec2(0.0, dFdy(texcoord.y)));
 
     //get the noise
     vec4 water_noise = vec4(vec3(fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_Color.x)) + 0.5f, 1.f) * proxy.z;
-    float terrain_noise_small = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale1); //figure out why whole noise is less than 0.5
-    float terrain_noise_big = fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale2);
+    float terrain_noise_small = clamp(fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale1) + 0.5, 0, 1);
+    //float voronoi = clamp(voronoi2d(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale1*10), 0, 1);
+
+    //float terrain_noise_small = perlin_noise(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale1); //figure out why whole noise is less than 0.5
+    float terrain_noise_big = clamp(fBm(vec2(texcoord.x * u_BgRes, texcoord.y) * u_scale2) + 0.5, 0, 1);
     
     float terrain = clamp(proxy.x, 0.0, 1.0);
     //initialize the water and terrain mask
-    float terrain_mask = clamp((abs(terrain_noise_small - 0.5) + terrain_noise_big), 0, 1.0) * (1 - proxy.z);
+    float terrain_mask = clamp((terrain_noise_small * terrain_noise_big), 0, 1.0) * (1 - proxy.z);
     terrain_mask = mix(terrain_mask, terrain, terrain);
     float water_mask = clamp((terrain_noise_small + terrain_noise_big * 4) / 10, 0.0, 0.5) * proxy.z;
 

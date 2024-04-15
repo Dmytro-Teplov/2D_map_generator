@@ -66,12 +66,13 @@ public:
 
     int batman_panel_width = 100;
     int robin_panel_width = 100;
-    float brush_size = 10;
+    int brush_size = 10;
     float brush_hardness = 0.5;
     float brush_opacity = 1.0;
 
     float density_1 = 0.01;
     float density_2 = 0.01;
+    float density_3 = 0.01;
 
     int canvas_width = 1280;
     int canvas_height = 720;
@@ -227,6 +228,7 @@ public:
     bool regenerate_mpds = false;
     bool erase_asset = false;
     unsigned int asset_type = 0;
+    int amount = 2;
 
     //Quad* assets = new Quad[number_of_assets]();
     //AssetHandler();
@@ -243,7 +245,7 @@ class Painter
 //private:
 //    void stamp(float posx, float posy, int width, int height);
 public:
-    float brush_size = 10;
+    int brush_size = 10;
     float brush_hardness = 0.5;
     float brush_opacity = 1.0;
     bool explicit_height = false;
@@ -277,4 +279,5 @@ public:
     void waterPanel(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height);
     void buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height);
     void floraPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height);
+    void mountainsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height);
 };

@@ -177,7 +177,9 @@ int main(void)
     
     AssetHandler buildings;
     AssetHandler flora;
-    flora.asset_type = 1;
+    AssetHandler mountains;
+    flora.asset_type = 2;
+    mountains.asset_type = 1;
 
     Quad frm_buffr(w_width, w_height);
 
@@ -281,27 +283,21 @@ int main(void)
             ImVec2 windowSize = ImGui::GetWindowSize();
             ImVec2 cursorPos = ImGui::GetCursorPos();
 
-
             ImGui::SetWindowSize(ImVec2(w_width, w_height));
             ImGui::SetWindowPos(ImVec2(0, 0));
             ImGuiStyle& style = ImGui::GetStyle();
             ImGui::SetCursorPos(ImVec2(0, windowSize.y*0.3));
             ui.middleLabel("Maps Generator");
 
-
             cursorPos = ImGui::GetCursorPos();
             ImGui::SetCursorPos(ImVec2(windowSize.x*0.3, cursorPos.y));
             ImGui::PushItemWidth(windowSize.x * 0.4);
             ImGui::InputInt("canvas width", &canvas_width,0);
 
-
             cursorPos = ImGui::GetCursorPos();
             ImGui::SetCursorPos(ImVec2(windowSize.x * 0.3, cursorPos.y));
             ImGui::PushItemWidth(windowSize.x * 0.4);
             ImGui::InputInt("canvas height", &canvas_height, 0);
-
-
-            
            
             ImVec2 textSize = ImGui::CalcTextSize("Load saved state");
             cursorPos = ImGui::GetCursorPos();
@@ -365,19 +361,15 @@ int main(void)
 
                 if (state.load_from_bin)
                 {
-                    //std::cout << "\n" << (int)canvas.canvas_rgba << "BEFORE\n";
                     archive.startDeserialization();
-
                     
                     archive.deserialize(file_version);
-
                    /* if (file_version != version)
                     {
                         std::cout << file_version <<" version of the file" << "\n";
                         std::cout << version <<" version of the program" <<"\n";
                         continue;
                     }*/
-
                     archive.deserialize(state.brush_size);
                     archive.deserialize(state.brush_hardness);
                     archive.deserialize(state.brush_opacity);
@@ -444,6 +436,7 @@ int main(void)
 
                 buildings.bgTexture_ID = resulting_FB.getResultTexture();
                 flora.bgTexture_ID = resulting_FB.getResultTexture();
+                mountains.bgTexture_ID = resulting_FB.getResultTexture();
 
                 canvas.calculateSSBB(state);
 
@@ -451,8 +444,10 @@ int main(void)
 
                 buildings.genDistribution(canvas, 1.0 / state.density_1);
                 flora.genDistribution(canvas, 1.0 / state.density_2);
+                mountains.genDistribution(canvas, 1.0 / state.density_3);
                 buildings.regenerate_mpds = true;
                 flora.regenerate_mpds = true;
+                mountains.regenerate_mpds = true;
 
                 
                 
@@ -537,6 +532,7 @@ int main(void)
             {
                 buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
                 flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
+                mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
             }
             resulting_FB.unBind();
             state.saveFbID(0);
@@ -548,10 +544,12 @@ int main(void)
             {
                 buildings.regenerate_mpds = state.regenerate_assets;
                 flora.regenerate_mpds = state.regenerate_assets;
+                mountains.regenerate_mpds = state.regenerate_assets;
                 state.regenerate_assets = false;
             }
             buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
             flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
+            mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
             
 
             //---END DRAWING ASSETS
@@ -614,10 +612,10 @@ int main(void)
             {
                 state.attachShader(cursor_shader);
                 relative_cursor = glm::translate(brush.model, glm::vec3(state.curs_x - w_width / 2.0, -state.curs_y + w_height / 2.0, 0) * glm::vec3(2));
-                relative_cursor = glm::scale(relative_cursor, glm::vec3(state.brush_size));
+                relative_cursor = glm::scale(relative_cursor, glm::vec3(state.brush_size)*state.zoom);
                 state.updMat(state.projection, "projection");
                 state.updMat(relative_cursor, "model");
-                state.updFloat(state.brush_size, "u_circle_size");
+                state.updFloat(state.brush_size * state.zoom, "u_circle_size");
                 state.updVec(glm::vec2(state.curs_x, w_height - state.curs_y), "u_pos");
                 brush.draw();
                 if (state.brush_pressed)
@@ -634,14 +632,17 @@ int main(void)
                     case 2:
                         painter.paint(x, y, canvas, state);
                         break;
-                    case 5:
+                    /*case 5:
                         painter.paint(x, y, canvas, state);
-                        break;
+                        break;*/
                     case 3:
                         painter.paint(x, y, canvas, state, buildings);
                         break;
                     case 4:
                         painter.paint(x, y, canvas, state, flora);
+                        break;
+                    case 5:
+                        painter.paint(x, y, canvas, state, mountains);
                         break;
                     }
                 }
@@ -661,6 +662,9 @@ int main(void)
                 break;
             case 4:
                 ui.renderUI(state, canvas, flora, w_width, w_height, canvas_width, canvas_height, res);
+                break;
+            case 5:
+                ui.renderUI(state, canvas, mountains, w_width, w_height, canvas_width, canvas_height, res);
                 break;
             default:
                 ui.renderUI(state, canvas, buildings, w_width, w_height, canvas_width, canvas_height, res);

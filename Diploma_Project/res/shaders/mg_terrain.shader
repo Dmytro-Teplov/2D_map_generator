@@ -115,6 +115,9 @@ void main()
         {
             color = u_water_color;
         }
+        //color.rgb = vec3(text.a)
+         
+
     }
             
     
@@ -168,7 +171,12 @@ void main()
             }
         }
     }
+    
+    
+    
     color.a = 1.0f;
+    
+    
     if (u_debug)
     {
         color.rgb = vec3(text.r);

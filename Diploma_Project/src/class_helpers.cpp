@@ -427,6 +427,10 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     {
         state.sel_tool = 4;
     }
+    if (ImGui::Button("Mountains", ImVec2(windowSize.x, 30)))
+    {
+        state.sel_tool = 5;
+    }
     /*if (ImGui::Button("Paths", ImVec2(windowSize.x, 30)))
     {
         state.sel_tool = 5;
@@ -446,11 +450,16 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     
     middleLabel("Settings");
     ImGui::InputInt("Noise Complexity", &canvas.noise_compl);
+    if (canvas.noise_compl > 100)
+    {
+        canvas.noise_compl = 6;
+    }
     ImGui::InputFloat("Noise 1 Scale", &canvas.noise_1_scale);
     ImGui::InputFloat("Noise 2 Scale", &canvas.noise_2_scale);
     middleLabel("Export");
     if (ImGui::InputText("Name(with extension!)", state.export_name_data, IM_ARRAYSIZE(state.export_name_data)))
     {
+
     }
     if (ImGui::Button("Save into PNG", ImVec2(windowSize.x, 30)))
     {
@@ -490,6 +499,9 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
             break;
         case 4:
             floraPanel(state, canvas, assets, w_width, w_height, canvas_width, canvas_height);
+            break;
+        case 5:
+            mountainsPanel(state, canvas, assets, w_width, w_height, canvas_width, canvas_height);
             break;
     }
     ImGui::Render();
@@ -650,7 +662,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
     }
 
     middleLabel("Terrain Brush");
-    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);// SHOULD BE PAINTER CLASS
+    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);// SHOULD BE PAINTER CLASS
 
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
     ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
@@ -710,7 +722,7 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int
     }
 
     middleLabel("Water Brush");
-    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
 
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
     ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
@@ -751,17 +763,17 @@ void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler
     }
 
     middleLabel("Buildings Brush");
-    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
     ImGui::Checkbox("Erase", &assets.erase_asset);
     middleLabel("Buildings Settings");
     ImGui::SliderFloat("Buildings Size", &assets.asset_size, 0.f, 15.f);
-    ImGui::SliderFloat("Town density", &state.density_1, 0.01f, 1.0f);
+    ImGui::SliderFloat("Buildings density", &state.density_1, 0.01f, 1.0f);
     if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
     {
         assets.genDistribution(canvas, 1.0 / state.density_1);
         assets.regenerate_mpds = true;
     }
-
+    ImGui::InputInt("Amount of assets used in atlas", &assets.amount);
     ImGui::End();
 }
 void UiHandler::floraPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height)
@@ -783,19 +795,53 @@ void UiHandler::floraPanel(StateHandler& state, Canvas& canvas, AssetHandler& as
     }
 
     middleLabel("Flora Brush");
-    ImGui::SliderFloat("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
     ImGui::Checkbox("Erase", &assets.erase_asset);
     middleLabel("Flora Settings");
     ImGui::SliderFloat("Flora Size", &assets.asset_size, 0.f, 15.f);
-    ImGui::SliderFloat("Town density", &state.density_2, 0.01f, 1.0f);
+    ImGui::SliderFloat("Flora density", &state.density_2, 0.01f, 1.0f);
     if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
     {
         assets.genDistribution(canvas, 1.0 / state.density_2);
         assets.regenerate_mpds = true;
     }
-
+    ImGui::InputInt("Amount of assets used in atlas", &assets.amount);
     ImGui::End();
 }
+
+void UiHandler::mountainsPanel(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height)
+{
+    ImGui::Begin("Mountains Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
+    ImGui::SetWindowPos(ImVec2(w_width - windowSize.x, 0));
+    state.robin_panel_width = w_width - windowSize.x;
+    if (ImGui::IsWindowHovered())
+    {
+        state.panel_hovered = true;
+        glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    else
+    {
+        if ((!state.panel_hovered) && state.sel_tool != 0)
+            glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
+
+    middleLabel("Mountains Brush");
+    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::Checkbox("Erase", &assets.erase_asset);
+    middleLabel("Mountains Settings");
+    ImGui::SliderFloat("Mountains Size", &assets.asset_size, 0.f, 15.f);
+    ImGui::SliderFloat("Mountains density", &state.density_3, 0.01f, 1.0f);
+    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
+    {
+        assets.genDistribution(canvas, 1.0 / state.density_3);
+        assets.regenerate_mpds = true;
+    }
+    ImGui::InputInt("Amount of assets used in atlas", &assets.amount);
+    ImGui::End();
+}
+
 
 Canvas::Canvas(int width_, int height_)
 {
@@ -1024,7 +1070,7 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
         int abs_posy = (canvas.fb_height - (posy - canvas.ssbb[0][1]) / state.zoom);
         int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
         //std::cout << canvas.fb_width << " " << canvas.fb_height << std::endl;
-        brush_size = brush_size / state.zoom;
+        //brush_size = brush_size;
         //std::cout << canvas.ssbb[0][0] << " " << canvas.ssbb[0][1] << std::endl;
 
         paintCanvas(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, state.sel_tool);
@@ -1064,7 +1110,7 @@ float Painter::calcOpacity(float distance, float hardness)
 }
 void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode)
 {
-    //std::cout << sizeof(canvas_rgba) / sizeof(canvas_rgba[0]) << std::endl;
+    std::cout << abs_posx<<" "<< abs_posy << std::endl;
     for (int i = -brush_size / 2; i <= brush_size / 2; i++)
     {
         for (int j = -brush_size / 2; j <= brush_size / 2; j++)
@@ -1073,7 +1119,8 @@ void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy
             if ((std::pow(i * i + j * j, 0.5) * 2 <= brush_size) && (index + 2 < width * height * 4) && (index > 0))
             {
                 //float hardness = (1 - ((float)std::pow(i * i + j * j, 0.5) * 2) / brush_size);
-                float hardness =1 - calcOpacity((float)std::pow(i * i + j * j, 0.5) * 2 , brush_hardness);
+
+                float hardness = 1.0 - pow(calcOpacity((float)std::pow(i * i + j * j, 0.5) * 2 , brush_hardness),2);
                 //std::cout << hardness << std::endl;
                 switch (mode)
                 {
@@ -1266,6 +1313,7 @@ void AssetHandler::draw(StateHandler& state, Canvas& canvas, unsigned int shader
         state.updSampler(1, "background");
         state.updInt(isFB, "u_isFB");
         state.updInt(asset_type, "u_asset_type");
+        state.updInt(amount, "u_assets_amount");
 
         glBindVertexArray(asset.vao);
 
