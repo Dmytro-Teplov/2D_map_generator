@@ -33,7 +33,7 @@ void main()
 #version 330 core
 
 in vec2 texcoord;
-
+in vec4 gl_FragCoord;
 out vec4 color;
 
 uniform sampler2D texture1;
@@ -42,9 +42,13 @@ uniform vec4 u_Color;
 uniform vec3 u_sun_pos;
 uniform float u_outline_thickness;
 uniform float u_outline_hardness;
+uniform float u_dot_size_w;
+uniform float u_dot_size_t;
 uniform float u_BgRes;
 uniform int u_steps_w;
 uniform int u_steps_t;
+uniform int u_dot_aff_w;
+uniform int u_dot_aff_t;
 uniform vec4 u_terrain_color;
 uniform vec4 u_water_color;
 uniform vec4 u_outline_color;
@@ -55,6 +59,8 @@ uniform bool u_use_secondary_tc;
 uniform bool u_use_secondary_wc;
 uniform bool u_use_step_gradient_w;
 uniform bool u_use_step_gradient_t;
+uniform bool u_use_texture_t;
+uniform bool u_use_texture_w;
 uniform bool u_debug;
 
 
@@ -84,6 +90,18 @@ vec3 linearToSrgb(vec3 linearColor)
     return srgbColor;
 }
 
+float makePattern(vec2 coords,float dot_size,float cell)
+{
+    coords = mat2(0.707, -0.707, 0.707, 0.707) * coords;
+    float cage = 4.0 * dot_size * cell;
+    float half_ = cage / 2.0;
+    coords = mod(coords + half_, cage) - half_;
+    
+    float dist = length(coords) - dot_size;
+    float sharpness = 100.;
+    return dot_size * sharpness - dist * sharpness;
+    
+}
 
 void main()
 {   
@@ -116,7 +134,11 @@ void main()
             color = u_water_color;
         }
         //color.rgb = vec3(text.a)
-         
+        if (u_use_texture_w)
+        {
+            float aff = u_dot_aff_w / 100.0;
+            color.rgb = color.rgb * (1 - clamp(vec3(makePattern(vec2(texcoord.x * u_BgRes, texcoord.y), u_dot_size_w, 1.5)), 0, aff));
+        }
 
     }
             

@@ -152,6 +152,9 @@ int main(void)
     if (glewInit() != GLEW_OK)
         std::cout << "Error";
     glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+    //glDisablei(GL_BLEND, 0);
+    glEnablei(GL_BLEND, 0);
+    glBlendEquationSeparatei(0, GL_FUNC_ADD, GL_MAX);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_callback);
 
@@ -264,6 +267,7 @@ int main(void)
         ImGui::NewFrame();
 
         glfwGetWindowSize(window, &w_width, &w_height);
+        
         if (state.save)
         {
             w_width = canvas_width;
@@ -316,10 +320,11 @@ int main(void)
             }
             
 
-
+            ui.middleLabel("You can't change the size later!");
 
             cursorPos = ImGui::GetCursorPos();
             ImGui::SetCursorPos(ImVec2(windowSize.x * 0.4, cursorPos.y));
+            
             if (ImGui::Button("Start", ImVec2(windowSize.x * 0.2, windowSize.y*0.1)))
             {
                 state.initial_start = false;
@@ -495,9 +500,16 @@ int main(void)
             state.updInt((int)canvas.use_step_gradient_t, "u_use_step_gradient_t");
             state.updInt((int)canvas.steps_w, "u_steps_w");
             state.updInt((int)canvas.steps_t, "u_steps_t");
+            state.updInt((int)canvas.use_proc_texture_w, "u_use_texture_w");
+            state.updInt((int)canvas.use_proc_texture_t, "u_use_texture_t");
+            state.updInt((int)canvas.dot_aff_w, "u_dot_aff_w");
+            state.updInt((int)canvas.dot_aff_t, "u_dot_aff_t");
+            state.updFloat(res, "u_BgRes");
             state.updFloat(canvas.outline_thickness, "u_outline_thickness");
             state.updFloat(canvas.outline_hardness, "u_outline_hardness");
             state.updFloat(canvas.use_outline, "u_use_outline");
+            state.updFloat(canvas.dot_size_w, "u_dot_size_w");
+            state.updFloat(canvas.dot_size_t, "u_dot_size_t");
             state.updFloat(0, "u_debug");
             if (state.reset)
             {
@@ -513,6 +525,7 @@ int main(void)
                     state.transform = glm::vec3(2) * glm::vec3((x - state.last_x), -(y - state.last_y), 0.0f);
                     state.view_relative = glm::translate(state.view_relative, state.transform / glm::vec3(state.zoom));
                 }
+                state.frustum.adjust(state.transform / glm::vec3(state.zoom));
                 canvas.calculateSSBB(state);
                 //state.frustum.adjust()//REAL TIME FRUSTUM CALCULATION
             }

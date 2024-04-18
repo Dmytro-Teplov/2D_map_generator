@@ -186,6 +186,8 @@ public:
     float noise_2_scale = 1.0;
     int steps_w = 1;
     int steps_t = 1;
+    int dot_aff_w = 50;
+    int dot_aff_t = 50;
     glm::vec4 terrain_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
     glm::vec4 terrain_secondary_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
     glm::vec4 water_c = glm::vec4(0.66f, 0.76f, 0.85f, 1.0f);
@@ -193,11 +195,15 @@ public:
     glm::vec4 outline_c = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     float outline_thickness = 1.0;
     float outline_hardness = 1.0;
+    float dot_size_w = 0.01;
+    float dot_size_t = 0.01;
     bool use_outline = false;
     bool use_secondary_tc = false;
     bool use_secondary_wc = false;
     bool use_step_gradient_w = false;
     bool use_step_gradient_t = false;
+    bool use_proc_texture_w = false;
+    bool use_proc_texture_t = false;
 
 
     Canvas(int width, int height);
@@ -270,7 +276,7 @@ class UiHandler
 public:
     UiHandler();
     explicit UiHandler(Painter& p_) : p(p_) {}
-    void renderUI(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height, float resolution);
+    void renderUI(StateHandler& state, Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int& canvas_width, int& canvas_height, float resolution);
     void renderStartupUI(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height, unsigned int shader_);
     void setCustomStyle();
     void setCustomFont(const char regular[], const char bold[]);

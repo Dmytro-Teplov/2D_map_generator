@@ -64,7 +64,7 @@ void main()
     //vec3 color_ = mix(background.rgb, asset_texture.rgb, asset_texture.a);
     color = mix(bg_color, asset_color, asset_color.a);
     //color = u_water_color;
-    if (asset_color.a<0.01)
+    if (asset_color.a<0.5)
         discard;
     if (bg_color == vec4(0,0,0,0))
         discard;

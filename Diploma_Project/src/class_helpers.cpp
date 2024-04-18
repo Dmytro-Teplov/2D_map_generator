@@ -380,7 +380,7 @@ void StateHandler::exportAsPNG(unsigned int textureID, int width, int height,int
     stbi_write_png(filename, width, height, 4, imageData_raw, width * 4);
 }
 
-void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int canvas_width, int canvas_height, float resolution)
+void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& assets, int w_width, int w_height, int& canvas_width, int& canvas_height, float resolution)
 {
     ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
@@ -407,7 +407,7 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     }
     middleLabel("Brushes");
 
-    if (ImGui::Button("Terrain", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Terrain Up(Terrain Settings)", ImVec2(windowSize.x, 30)))
     {
         state.sel_tool = 1;//MAKE SECOND TERRAIN TYPE
     }
@@ -415,7 +415,7 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     //{
     //    state.sel_tool = 4;
     //}
-    if (ImGui::Button("Water", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Terrain Down(Water Settings)", ImVec2(windowSize.x, 30)))
     {
         state.sel_tool = 2;
     }
@@ -457,6 +457,8 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     ImGui::InputFloat("Noise 1 Scale", &canvas.noise_1_scale);
     ImGui::InputFloat("Noise 2 Scale", &canvas.noise_2_scale);
     middleLabel("Export");
+
+
     if (ImGui::InputText("Name(with extension!)", state.export_name_data, IM_ARRAYSIZE(state.export_name_data)))
     {
 
@@ -661,7 +663,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
             glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     }
 
-    middleLabel("Terrain Brush");
+    middleLabel("Elevate Terrain Tool");
     ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);// SHOULD BE PAINTER CLASS
 
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
@@ -705,7 +707,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
 }
 void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int w_height, int canvas_width, int canvas_height)
 {
-    ImGui::Begin("Water Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin("Lower Terrain Tool", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
     ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
     ImGui::SetWindowPos(ImVec2(w_width - windowSize.x, 0));
@@ -721,9 +723,9 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int
             glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     }
 
-    middleLabel("Water Brush");
-    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
+    middleLabel("Lower Terrain Tool");
 
+    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
     ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
     ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
     middleLabel("Water Settings");
@@ -740,6 +742,10 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int
     ImGui::Checkbox("Use step gradient", &canvas.use_step_gradient_w);
     ImGui::SliderInt("Steps", &canvas.steps_w, 1, 100);
     
+    ImGui::Checkbox("Use procedural texture", &canvas.use_proc_texture_w);
+    ImGui::SliderFloat("Dot size", &canvas.dot_size_w, 0.001, 0.01);
+    ImGui::SliderInt("Texture affection factor", &canvas.dot_aff_w, 1, 100);
+
     canvas.water_c = glm::vec4(color[0], color[1], color[2], color[3]);
     canvas.water_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
     ImGui::End();
@@ -1090,7 +1096,7 @@ void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state,
         int abs_posy = (canvas.fb_height - (posy - canvas.ssbb[0][1]) / state.zoom);
         int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
         //std::cout << canvas.fb_width << " " << canvas.fb_height << std::endl;
-        brush_size = brush_size / state.zoom;
+        //brush_size = brush_size / state.zoom;
         //std::cout << canvas.ssbb[0][0] << " " << canvas.ssbb[0][1] << std::endl;
         paintAssets(canvas.buildings_rgba, assets.asset_type, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, assets.erase_asset);
 
@@ -1110,7 +1116,7 @@ float Painter::calcOpacity(float distance, float hardness)
 }
 void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode)
 {
-    std::cout << abs_posx<<" "<< abs_posy << std::endl;
+    //std::cout << abs_posx<<" "<< abs_posy << std::endl;
     for (int i = -brush_size / 2; i <= brush_size / 2; i++)
     {
         for (int j = -brush_size / 2; j <= brush_size / 2; j++)
