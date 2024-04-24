@@ -153,8 +153,9 @@ int main(void)
         std::cout << "Error";
     glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     //glDisablei(GL_BLEND, 0);
-    glEnablei(GL_BLEND, 0);
-    glBlendEquationSeparatei(0, GL_FUNC_ADD, GL_MAX);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendEquationSeparatei(0, GL_FUNC_ADD, GL_MAX); 
+    glEnable(GL_BLEND);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_callback);
 
