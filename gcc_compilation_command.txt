@@ -7,8 +7,10 @@ g++ -std=c++17 \
     -IDependencies/GLEW/include \
     -IDependencies/stb \
     -IDependencies/glm \
+    -IDependencies/mpds \
     Diploma_Project/src/App.cpp \
     Diploma_Project/src/class_helpers.cpp \
+    Diploma_Project/src/serialization.cpp \
     Diploma_Project/src/GL_helpers.cpp \
     Diploma_Project/res/imgui/imgui.cpp \
     Diploma_Project/res/imgui/imgui_demo.cpp \
