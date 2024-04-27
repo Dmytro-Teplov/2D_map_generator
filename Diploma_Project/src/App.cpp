@@ -155,7 +155,7 @@ int main(void)
     //glDisablei(GL_BLEND, 0);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     //glBlendEquationSeparatei(0, GL_FUNC_ADD, GL_MAX); 
-    glEnable(GL_BLEND);
+    //glEnable(GL_BLEND);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_callback);
 
@@ -336,10 +336,6 @@ int main(void)
                 canvas.debug();
                 canvas.setShader(terrain_shader);
 
-
-                
-
-
                 frm_buffr.initialize(false);
                 frm_buffr.texture = canvas.fb_texture;
                 frm_buffr.debug();
@@ -403,11 +399,24 @@ int main(void)
                     archive.deserialize(canvas.water_c);
                     archive.deserialize(canvas.water_secondary_c);
 
+                    archive.deserialize(buildings.asset_size);
+                    archive.deserialize(buildings.amount);
+                    archive.deserialize(buildings.erase_asset);
+
+                    archive.deserialize(flora.asset_size);
+                    archive.deserialize(flora.amount);
+                    archive.deserialize(flora.erase_asset);
+
+                    archive.deserialize(mountains.asset_size);
+                    archive.deserialize(mountains.amount);
+                    archive.deserialize(mountains.erase_asset);
+
                     archive.deserialize(state.sel_tool);
                     archive.deserialize(state.density_1);
                     archive.deserialize(state.density_2);
-                    archive.deserialize(canvas.canvas_rgba, canvas_width * canvas_height * 4);
-                    archive.deserialize(canvas.buildings_rgba, canvas_width * canvas_height * 4);
+                    archive.deserialize(state.density_3);
+                    archive.deserialize(canvas.canvas_rgba, canvas_width* canvas_height * 4);
+                    archive.deserialize(canvas.buildings_rgba, canvas_width* canvas_height * 4);
                     archive.stopDeserialization();
                     canvas.uploadFbTexture();
                     state.regenerate_assets = true;
@@ -455,13 +464,9 @@ int main(void)
                 flora.regenerate_mpds = true;
                 mountains.regenerate_mpds = true;
 
-                
-                
             }
             ImGui::End();
             ImGui::Render();
-
-
             
         }
         else
@@ -540,13 +545,16 @@ int main(void)
             // DRAWING CANVAS TO TEXTURE
             resulting_FB.updateSize(w_width, w_height);
             resulting_FB.bind();
+            
             state.saveFbID(resulting_FB.getFbID());
             canvas.draw();
             if (state.save)
             {
+                glEnable(GL_BLEND);
                 buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
                 flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
                 mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)),1);
+                glDisable(GL_BLEND);
             }
             resulting_FB.unBind();
             state.saveFbID(0);
@@ -561,10 +569,11 @@ int main(void)
                 mountains.regenerate_mpds = state.regenerate_assets;
                 state.regenerate_assets = false;
             }
+            glEnable(GL_BLEND);
             buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
             flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
             mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
-            
+            glDisable(GL_BLEND);
 
             //---END DRAWING ASSETS
              
@@ -611,9 +620,22 @@ int main(void)
                 archive.serialize(canvas.water_c);
                 archive.serialize(canvas.water_secondary_c);
 
+                archive.serialize(buildings.asset_size);
+                archive.serialize(buildings.amount);
+                archive.serialize(buildings.erase_asset);
+
+                archive.serialize(flora.asset_size);
+                archive.serialize(flora.amount);
+                archive.serialize(flora.erase_asset);
+
+                archive.serialize(mountains.asset_size);
+                archive.serialize(mountains.amount);
+                archive.serialize(mountains.erase_asset);
+
                 archive.serialize(state.sel_tool);
                 archive.serialize(state.density_1);
                 archive.serialize(state.density_2);
+                archive.serialize(state.density_3);
                 archive.serialize(canvas.canvas_rgba,canvas_width*canvas_height*4);
                 archive.serialize(canvas.buildings_rgba,canvas_width*canvas_height*4);
                 archive.stopSerialization();

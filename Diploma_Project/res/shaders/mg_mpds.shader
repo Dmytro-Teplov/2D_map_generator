@@ -61,12 +61,5 @@ void main()
 {
     vec4 asset_color = texture2D(asset_texture, texcoord);
     vec4 bg_color = texture2D(background, global_texcoord);
-    //vec3 color_ = mix(background.rgb, asset_texture.rgb, asset_texture.a);
     color = vec4(asset_color);
-    //color = u_water_color;
-    //if (asset_color.a<0.5)
-    //    discard;
-    //if (bg_color == vec4(0,0,0,0))
-    //    discard;
-    //color = vec4(1.0f);
 };
