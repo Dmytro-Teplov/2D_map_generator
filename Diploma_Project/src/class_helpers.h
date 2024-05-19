@@ -69,6 +69,7 @@ public:
     int brush_size = 10;
     float brush_hardness = 0.5;
     float brush_opacity = 1.0;
+    int brush_height = 127;
 
     float density_1 = 0.01;
     float density_2 = 0.01;
@@ -204,6 +205,8 @@ public:
     bool use_step_gradient_t = false;
     bool use_proc_texture_w = false;
     bool use_proc_texture_t = false;
+    bool explicit_height = false;
+    bool use_foam = false;
 
 
     Canvas(int width, int height);
@@ -251,18 +254,26 @@ class Painter
 //private:
 //    void stamp(float posx, float posy, int width, int height);
 public:
+    Quad& brush;
+    FrameBuffer& fb;
     int brush_size = 10;
     float brush_hardness = 0.5;
     float brush_opacity = 1.0;
     bool explicit_height = false;
+    unsigned int shader;
+    int prev_posx = 0;
+    int prev_posy = 0;
+
+    glm::mat4 relative_pos = glm::mat4(1.0f);
 
     Painter();
+    explicit Painter(Quad& brush_, FrameBuffer& fb_) : brush(brush_), fb(fb_) {}
     void paint(float posx, float posy, Canvas& canvas, StateHandler& state);
     void paint(float posx, float posy, Canvas& canvas, StateHandler& state, AssetHandler& assets);
-    void paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode);
+    void paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode, bool use_explicit_h, int expl_height);
     void paintAssets(unsigned char*& canvas_rgba, unsigned int type, int abs_posx, int abs_posy, int width, int height, bool erase);
     float calcOpacity(float distance, float hardness);
-    Painter operator=(const Painter& p);
+    //Painter operator=(const Painter& p);
 };
 
 class UiHandler

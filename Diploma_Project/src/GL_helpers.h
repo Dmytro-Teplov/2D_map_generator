@@ -63,12 +63,34 @@ private:
 	int w_width = 640;
 	int w_height = 480;
 public:
+	FrameBuffer();
 	FrameBuffer(int w_width_, int w_height_);
+
 	void bind();
+	void bind(bool clear);
 	void unBind();
 	void updateSize(int w_width_, int w_height_);
+	void fill(const char r, const char g, const char b, const char a);
+	void fill(unsigned char* texture_rgba);
+
 	unsigned int getResultTexture();
 	unsigned int getFbID();
+	unsigned int getTextureLen();
 	
+	FrameBuffer operator=(const FrameBuffer& fbID);
 	//Create fb class and then create fb to colorized map to.
+};
+class Texture
+{
+private:
+	unsigned int id = 0;
+	int width = 0;
+	int height = 0;
+public:
+	Texture();
+	~Texture();
+	void bind();
+	void unBind();
+	void setSize(int width_, int height_);
+	void fill(const char r, const char g, const char b, const char a);
 };

@@ -6,6 +6,7 @@
 #include <ctime>
 #include <vector>
 #include <glm.hpp>
+#include "GL_helpers.h"
 //#include <string>
 //#include <iostream>
 //#include <fstream>
@@ -41,13 +42,16 @@ public:
 	bool serialize(bool data);
 	bool serialize(glm::vec4 data);
 	bool serialize(std::string data);
+	bool serialize(unsigned char* texture_rgba, const int len);
+	bool serialize(FrameBuffer fb);
 
 	bool deserialize(float &data);
 	bool deserialize(int &data);
 	bool deserialize(bool &data);
 	bool deserialize(glm::vec4& data);
 	bool deserialize(std::string& data);
-
-	bool serialize(unsigned char* texture_rgba, const int len);
 	bool deserialize(unsigned char*& texture_rgba, const int len);
+	bool deserialize(FrameBuffer& fb, const int width, const int height);
+	
+	
 };

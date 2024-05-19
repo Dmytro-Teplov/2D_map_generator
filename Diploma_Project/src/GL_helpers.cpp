@@ -191,6 +191,10 @@ IndexBuffer IndexBuffer::operator=(const IndexBuffer& ib)
     return IndexBuffer();
 }
 
+FrameBuffer::FrameBuffer()
+{
+}
+
 FrameBuffer::FrameBuffer(int w_width_, int w_height_)
 {
     w_width = w_width_;
@@ -218,6 +222,13 @@ void FrameBuffer::bind()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glBindFramebuffer(GL_FRAMEBUFFER, fb_ID);
 }
+void FrameBuffer::bind(bool clear)
+{
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+    if(clear)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_ID);
+}
 void FrameBuffer::unBind()
 {
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -229,6 +240,9 @@ void FrameBuffer::updateSize(int w_width_, int w_height_)
 {
     w_width = w_width_;
     w_height = w_height_;
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 unsigned int FrameBuffer::getResultTexture()
@@ -238,4 +252,84 @@ unsigned int FrameBuffer::getResultTexture()
 unsigned int FrameBuffer::getFbID()
 {
     return fb_ID;
+}
+void FrameBuffer::fill(const char r, const char g, const char b, const char a)
+{
+    unsigned char* imgdata = (unsigned char*)malloc(w_width * w_height * 4);
+    for (int y = 0; y < w_height; ++y) {
+        for (int x = 0; x < w_width; ++x) {
+            int index = (y * w_width + x) * 4;
+            imgdata[index + 0] = r;     // Red
+            imgdata[index + 1] = g;     // Green
+            imgdata[index + 2] = b;     // Blue
+            imgdata[index + 3] = a;     // Alpha
+        }
+    }
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+void FrameBuffer::fill(unsigned char* texture_rgba)
+{
+    glBindTexture(GL_TEXTURE_2D, texture_ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w_width, w_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_rgba);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+unsigned int FrameBuffer::getTextureLen()
+{
+    return w_width*w_height*4;
+}
+FrameBuffer FrameBuffer::operator=(const FrameBuffer& fbID)
+{
+
+    fb_ID = fbID.fb_ID;
+    shader_ID = fbID.shader_ID;
+    texture_ID = fbID.texture_ID;
+    w_height = fbID.w_height;
+    w_width = fbID.w_width;
+    return FrameBuffer();
+}
+
+
+
+Texture::Texture()
+{
+    glGenTextures(1, &id);
+    glActiveTexture(GL_TEXTURE0);
+}
+
+Texture::~Texture()
+{
+    glDeleteTextures(1, &id);
+}
+
+void Texture::bind()
+{
+    glBindTexture(GL_TEXTURE_2D, id);
+}
+
+void Texture::unBind()
+{
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Texture::setSize(int width_, int height_)
+{
+    width = width_;
+    height = height_;
+}
+
+void Texture::fill(const char r, const char g, const char b, const char a)
+{
+    unsigned char* imgdata = (unsigned char*)malloc(width * height * 4);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int index = (y * width + x) * 4;
+            imgdata[index + 0] = r;     // Red
+            imgdata[index + 1] = g;     // Green
+            imgdata[index + 2] = b;     // Blue
+            imgdata[index + 3] = a;     // Alpha
+        }
+    }
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
 }

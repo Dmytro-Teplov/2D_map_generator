@@ -61,5 +61,13 @@ void main()
 {
     vec4 asset_color = texture2D(asset_texture, texcoord);
     vec4 bg_color = texture2D(background, global_texcoord);
-    color = vec4(asset_color);
+    
+    if (bg_color.rba == vec3(0.0))
+    {
+        discard;
+    }
+    else
+    {
+        color = vec4(asset_color);
+    }
 };

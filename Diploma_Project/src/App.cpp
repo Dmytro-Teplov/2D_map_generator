@@ -154,12 +154,16 @@ int main(void)
     glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     //glDisablei(GL_BLEND, 0);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    //glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+    glBlendEquation(GL_FUNC_ADD);
     //glBlendEquationSeparatei(0, GL_FUNC_ADD, GL_MAX); 
-    //glEnable(GL_BLEND);
+    glEnable(GL_BLEND);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_callback);
 
-    ShaderProgramSource heightmap_sources, terrain_sources, cursor_sources, asset_sources, startup_bg_source;
+    ShaderProgramSource heightmap_sources, terrain_sources, cursor_sources, asset_sources, startup_bg_source, painter_source;
 
     heightmap_sources = ParseShader("res/shaders/mg_heightmap.shader");
     unsigned int heightmap_shader = CreateShader(heightmap_sources.vertexShader, heightmap_sources.fragmentShader);
@@ -176,12 +180,18 @@ int main(void)
     startup_bg_source = ParseShader("res/shaders/mg_startup_bg.shader");
     unsigned int startup_bg_shader = CreateShader(startup_bg_source.vertexShader, startup_bg_source.fragmentShader);
 
+    painter_source = ParseShader("res/shaders/mg_painter.shader");
+    unsigned int painter_shader = CreateShader(painter_source.vertexShader, painter_source.fragmentShader);
+
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::cout << "Current path is " << currentPath << std::endl;
     
-    AssetHandler buildings;
-    AssetHandler flora;
-    AssetHandler mountains;
+    AssetHandler buildings(true, "res/assets/demo_assets.png");
+    AssetHandler flora(true, "res/assets/demo_assets.png");
+    AssetHandler mountains(true, "res/assets/demo_assets.png");
+    /*AssetHandler buildings(true);
+    AssetHandler flora(true);
+    AssetHandler mountains(true);*/
     flora.asset_type = 2;
     mountains.asset_type = 1;
 
@@ -199,6 +209,8 @@ int main(void)
 
     FrameBuffer resulting_FB(w_width, w_height);
 
+    FrameBuffer painter_FB(canvas_width, canvas_height);
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -212,7 +224,11 @@ int main(void)
 
     double x = 0;
     double y = 0;
-    Painter painter;
+    Painter painter(brush, painter_FB);
+    painter.shader = painter_shader;
+    /*painter.brush = brush;
+    painter.fb = painter_FB;*/
+
 
     UiHandler ui(painter);
     ui.setCustomFont("res/fonts/AtkinsonHyperlegible-Regular.ttf", "res/fonts/AtkinsonHyperlegible-Bold.ttf");
@@ -361,6 +377,9 @@ int main(void)
                 res = (float)canvas_width / canvas_height;
                 state.updFloat(res, "u_BgRes");
 
+                painter.fb.updateSize(canvas.width, canvas.height);
+                painter.fb.fill(0, 0, 255, 255);
+
                 if (state.load_from_bin)
                 {
                     archive.startDeserialization();
@@ -415,7 +434,8 @@ int main(void)
                     archive.deserialize(state.density_1);
                     archive.deserialize(state.density_2);
                     archive.deserialize(state.density_3);
-                    archive.deserialize(canvas.canvas_rgba, canvas_width* canvas_height * 4);
+                    //archive.deserialize(canvas.canvas_rgba, canvas_width* canvas_height * 4);
+                    archive.deserialize(painter.fb, canvas_width, canvas_height);
                     archive.deserialize(canvas.buildings_rgba, canvas_width* canvas_height * 4);
                     archive.stopDeserialization();
                     canvas.uploadFbTexture();
@@ -433,6 +453,17 @@ int main(void)
                 state.updVec(glm::vec2(w_width, w_height), "u_resolution");
                 state.updVec(glm::vec2(0, 0), "u_pos");
                 state.updFloat(state.brush_size, "u_circle_size");
+
+                //SETTING UP PAINTER SHADER
+
+                state.attachShader(painter_shader);
+                state.updMat(brush.model, "model");
+                state.updMat(state.view, "view");
+                state.updMat(state.projection, "projection");
+                state.updVec(glm::vec2(w_width, w_height), "u_resolution");
+                state.updVec(glm::vec2(0, 0), "u_pos");
+                state.updFloat(state.brush_size, "u_circle_size");
+                
 
                 //SETTING UP ASSET SHADER
 
@@ -484,6 +515,7 @@ int main(void)
             state.updFloat(canvas.noise_compl, "u_complexity");
             state.updFloat(canvas.noise_1_scale, "u_scale1");
             state.updFloat(canvas.noise_2_scale, "u_scale2");
+            frm_buffr.texture = painter.fb.getResultTexture();
             frm_buffr.draw();
             heightmap_FB.unBind();
             state.saveFbID(0);
@@ -504,6 +536,7 @@ int main(void)
             state.updInt((int)canvas.use_secondary_wc, "u_use_secondary_wc");
             state.updInt((int)canvas.use_step_gradient_w, "u_use_step_gradient_w");
             state.updInt((int)canvas.use_step_gradient_t, "u_use_step_gradient_t");
+            state.updInt((int)canvas.use_foam, "u_use_foam");
             state.updInt((int)canvas.steps_w, "u_steps_w");
             state.updInt((int)canvas.steps_t, "u_steps_t");
             state.updInt((int)canvas.use_proc_texture_w, "u_use_texture_w");
@@ -536,6 +569,7 @@ int main(void)
                 //state.frustum.adjust()//REAL TIME FRUSTUM CALCULATION
             }
             state.updMat(state.view_relative, "view");
+
             canvas.draw();
             state.updInt(1, "u_isFb");
             state.updMat(glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), "transform_");
@@ -573,7 +607,7 @@ int main(void)
             buildings.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
             flora.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
             mountains.draw(state, canvas, asset_shader, glm::translate(state.default_view, glm::vec3(-(float)(w_width - canvas_width), (float)(w_height - canvas_height), 0)), 0);
-            glDisable(GL_BLEND);
+            
 
             //---END DRAWING ASSETS
              
@@ -636,7 +670,8 @@ int main(void)
                 archive.serialize(state.density_1);
                 archive.serialize(state.density_2);
                 archive.serialize(state.density_3);
-                archive.serialize(canvas.canvas_rgba,canvas_width*canvas_height*4);
+                archive.serialize(painter.fb);
+                //archive.serialize(canvas.canvas_rgba,canvas_width*canvas_height*4);
                 archive.serialize(canvas.buildings_rgba,canvas_width*canvas_height*4);
                 archive.stopSerialization();
             }
@@ -664,6 +699,7 @@ int main(void)
                     {
                     case 1:
                         painter.paint(x, y, canvas, state);
+
                         break;
                     case 2:
                         painter.paint(x, y, canvas, state);
@@ -684,7 +720,7 @@ int main(void)
                 }
             }
             //---END CURSOR DRAWING
-
+            glDisable(GL_BLEND);
 
             state.attachShader(heightmap_shader);
 
@@ -710,9 +746,7 @@ int main(void)
             
         }
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        /* Swap front and back buffers */
         glfwSwapBuffers(window);
-        /* Poll for and process events */
         glfwPollEvents();
     }
 

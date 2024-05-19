@@ -61,6 +61,7 @@ uniform bool u_use_step_gradient_w;
 uniform bool u_use_step_gradient_t;
 uniform bool u_use_texture_t;
 uniform bool u_use_texture_w;
+uniform bool u_use_foam;
 uniform bool u_debug;
 
 
@@ -169,14 +170,15 @@ void main()
         }
             
     }
-        
+    if (terrain_mask <= 0.40 && terrain_mask >= 0.37 && text.a >0.5 && u_use_foam)
+    {
+        color.rgb = vec3(0.9) ;
+    }
     // OUTLINE
     if (u_use_outline)
     {
         float outlineWidth = u_outline_thickness / 512;
         
-        //float hardness = (1 - (sqrt(i * i + j * j) * 2) / brush_size) * brush_hardness;
-        //float xf = 0, yf = 0;
         for (float x = -1; x <= 1; x += 0.5)
         {
             for (float y = -1; y <= 1; y += 0.5)

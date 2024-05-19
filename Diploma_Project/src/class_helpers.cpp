@@ -1,5 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+
+
 #include "class_helpers.h"
 
 //#include <glm.hpp>
@@ -384,6 +386,7 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
 {
     ImGui::Begin("Quests", &leftPanelOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGuiIO ioImgui = ImGui::GetIO();
     ImGui::SetWindowSize(ImVec2(windowSize.x, w_height));
     state.batman_panel_width = windowSize.x;
     ImGui::SetWindowPos(ImVec2(0, 0));
@@ -397,8 +400,11 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     }
     else
     {
-        if(state.sel_tool != 0)
-            glfwSetInputMode(state.window, GLFW_CURSOR,GLFW_CURSOR_HIDDEN);
+        if (state.sel_tool != 0)
+        {
+            glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            ioImgui.ConfigFlags &= !ImGuiConfigFlags_NoMouseCursorChange;
+        }
     }
     middleLabel("Maps Generator");
     if (ImGui::Button("Move Tool",ImVec2(windowSize.x, 30)))//bad constants meh
@@ -664,10 +670,12 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
     }
 
     middleLabel("Elevate Terrain Tool");
-    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);// SHOULD BE PAINTER CLASS
+    ImGui::SliderInt("Brush size", &state.brush_size, 0.f, 500.f);// SHOULD BE PAINTER CLASS
 
-    ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
-    ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
+    ImGui::SliderFloat("Brush hardness", &state.brush_hardness, 0.f, 1.f);
+    ImGui::SliderFloat("Brush opacity", &state.brush_opacity, 0.f, 1.f);
+    ImGui::Checkbox("Explicit height", &canvas.explicit_height);
+    ImGui::SliderInt("Height", &state.brush_height, 0, 255);
     middleLabel("Terrain Settings");
     
     float color[4] = { 0 };
@@ -685,7 +693,7 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
     /*static bool is_gradient = false;
     static bool outline = false;*/
     ImGui::Checkbox("Gradient", &canvas.use_secondary_tc);
-    ImGui::ColorEdit4("Second Color", color2);
+    ImGui::ColorEdit4("Second color", color2);
     ImGui::Checkbox("Use step gradient", &canvas.use_step_gradient_t);
     ImGui::SliderInt("Steps", &canvas.steps_t, 1, 100);
     
@@ -694,9 +702,9 @@ void UiHandler::terrainPanel(StateHandler& state, Canvas& canvas, int w_width, i
     
     ImGui::Checkbox("Outline", &canvas.use_outline);
     
-    ImGui::ColorEdit4("Outline Color", color3);
-    ImGui::SliderFloat("Outline Thickness", &canvas.outline_thickness, 0.f, 10.f);
-    ImGui::SliderFloat("Outline Hardness", &canvas.outline_hardness, 0.f, 1.f);
+    ImGui::ColorEdit4("Outline color", color3);
+    ImGui::SliderFloat("Outline thickness", &canvas.outline_thickness, 0.f, 10.f);
+    //ImGui::SliderFloat("Outline hardness", &canvas.outline_hardness, 0.f, 1.f);
 
     canvas.terrain_c = glm::vec4(color[0], color[1], color[2], color[3]);
     canvas.terrain_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
@@ -725,9 +733,11 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int
 
     middleLabel("Lower Terrain Tool");
 
-    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
-    ImGui::SliderFloat("Brush Hardness", &state.brush_hardness, 0.f, 1.f);
-    ImGui::SliderFloat("Brush Opacity", &state.brush_opacity, 0.f, 1.f);
+    ImGui::SliderInt("Brush size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderFloat("Brush hardness", &state.brush_hardness, 0.f, 1.f);
+    ImGui::SliderFloat("Brush opacity", &state.brush_opacity, 0.f, 1.f);
+    ImGui::Checkbox("Explicit height", &canvas.explicit_height);
+    ImGui::SliderInt("Height", &state.brush_height, 0, 255);
     middleLabel("Water Settings");
     float color[4] = { 0 };
     float color2[4] = { 0 };
@@ -738,13 +748,15 @@ void UiHandler::waterPanel(StateHandler& state, Canvas& canvas, int w_width, int
     }
     ImGui::ColorEdit4("Color", color);
     ImGui::Checkbox("Gradient", &canvas.use_secondary_wc);
-    ImGui::ColorEdit4("Second Color", color2);
+    ImGui::ColorEdit4("Second color", color2);
     ImGui::Checkbox("Use step gradient", &canvas.use_step_gradient_w);
     ImGui::SliderInt("Steps", &canvas.steps_w, 1, 100);
     
     ImGui::Checkbox("Use procedural texture", &canvas.use_proc_texture_w);
     ImGui::SliderFloat("Dot size", &canvas.dot_size_w, 0.001, 0.01);
     ImGui::SliderInt("Texture affection factor", &canvas.dot_aff_w, 1, 100);
+
+    ImGui::Checkbox("Show foam", &canvas.use_foam);
 
     canvas.water_c = glm::vec4(color[0], color[1], color[2], color[3]);
     canvas.water_secondary_c = glm::vec4(color2[0], color2[1], color2[2], color2[3]);
@@ -769,10 +781,10 @@ void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler
     }
 
     middleLabel("Buildings Brush");
-    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderInt("Brush size", &state.brush_size, 0.f, 250.f);
     ImGui::Checkbox("Erase", &assets.erase_asset);
     middleLabel("Buildings Settings");
-    ImGui::SliderFloat("Buildings Size", &assets.asset_size, 0.f, 15.f);
+    ImGui::SliderFloat("Buildings size", &assets.asset_size, 0.f, 15.f);
     ImGui::SliderFloat("Buildings density", &state.density_1, 0.01f, 1.0f);
     if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
     {
@@ -947,9 +959,6 @@ void Canvas::setSize(StateHandler& state, int width_, int height_)
         }
     }
 
-    // get the texture data
-    /*glBindTexture(GL_TEXTURE_2D, fb_texture);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);*/
 
     canvas_rgba = imageData;
     buildings_rgba = maskData;
@@ -1061,29 +1070,60 @@ void Canvas::uploadFbTexture()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fb_width, fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas_rgba);
     glBindTexture(GL_TEXTURE_2D, fb_texture);
 }
-Painter::Painter()
-{
 
-
-}
 
 void Painter::paint(float posx, float posy, Canvas& canvas, StateHandler& state)
 {
-    //std::cout << posx - canvas.ssbb[0][0] << "," << posy - canvas.ssbb[0][1] << std::endl;
+    //std::cout << posx - canvas.ssbb[0][0] << "," << posy - canvas.ssbb[0][1]I
+    //  << std::endl;
     if (canvas.isInside(posx,posy))
     {
-        int abs_posx = (posx - canvas.ssbb[0][0])/state.zoom;
+        int abs_posx = (posx - canvas.ssbb[0][0])/ state.zoom;
         int abs_posy = (canvas.fb_height - (posy - canvas.ssbb[0][1]) / state.zoom);
-        int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
-        //std::cout << canvas.fb_width << " " << canvas.fb_height << std::endl;
-        //brush_size = brush_size;
-        //std::cout << canvas.ssbb[0][0] << " " << canvas.ssbb[0][1] << std::endl;
+        //int index = (canvas.fb_width * abs_posy + abs_posx) * 4;
+        unsigned int prev_s = state.shader;
+        //if(canvas.width>state.w_width || canvas.height > state.w_height)
+        glViewport(0, 0, canvas.width, canvas.height);
 
-        paintCanvas(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, state.sel_tool);
+        if(canvas.explicit_height)
+            glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+        else 
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+       
 
-        glBindTexture(GL_TEXTURE_2D, canvas.fb_texture);
+        state.attachShader(shader);
+        relative_pos = glm::translate(brush.model, glm::vec3(abs_posx - canvas.width / 2.0 , abs_posy - canvas.height / 2.0 , 0) * glm::vec3(2));
+        relative_pos = glm::scale(relative_pos, glm::vec3(state.brush_size));
+        //relative_pos = glm::translate(relative_pos);
+        state.updMat(relative_pos, "model");
+        state.updMat(glm::ortho(-(float)canvas.width, (float)canvas.width, -(float)canvas.height, (float)canvas.height, 0.1f, 100.0f),"projection");
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
+        //state.updMat(state.projection, "projection");
+        state.updFloat(state.brush_size, "u_circle_size");
+        state.updFloat(brush_hardness, "u_brush_hardness");
+        state.updFloat(brush_opacity* brush_opacity, "u_brush_opacity");
+        state.updInt(state.brush_height, "u_brush_height");
+        state.updFloat(canvas.explicit_height, "u_explicit_height");
+        state.updInt(state.sel_tool , "u_brush");
+
+        state.updFloat(state.brush_size, "u_circle_size");
+        state.updVec(glm::vec2(abs_posx,abs_posy), "u_pos");
+        fb.bind(false);
+        state.saveFbID(fb.getFbID());
+        if(abs_posx!= prev_posx && prev_posy!= abs_posy)
+            brush.draw();
+        fb.unBind();
+        state.saveFbID(0);
+        state.attachShader(prev_s);
+        glViewport(0, 0, state.w_width, state.w_height);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        prev_posx = abs_posx;
+        prev_posy = abs_posy;
+        //paintCanvas(canvas.canvas_rgba, abs_posx, abs_posy, canvas.fb_width, canvas.fb_height, state.sel_tool, canvas.explicit_height, state.brush_height);
+
+        //glBindTexture(GL_TEXTURE_2D, canvas.fb_texture);
+
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas.fb_width, canvas.fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas.canvas_rgba);
 
     }
 }
@@ -1114,7 +1154,7 @@ float Painter::calcOpacity(float distance, float hardness)
         return 0.0;
     return  ((distance/ brush_size)-hardness)/(1-hardness);
 }
-void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode)
+void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy, int width, int height, int mode, bool use_explicit_h, int expl_height)
 {
     //std::cout << abs_posx<<" "<< abs_posy << std::endl;
     for (int i = -brush_size / 2; i <= brush_size / 2; i++)
@@ -1126,17 +1166,23 @@ void Painter::paintCanvas(unsigned char*& canvas_rgba,int abs_posx, int abs_posy
             {
                 //float hardness = (1 - ((float)std::pow(i * i + j * j, 0.5) * 2) / brush_size);
 
-                float hardness = 1.0 - pow(calcOpacity((float)std::pow(i * i + j * j, 0.5) * 2 , brush_hardness),2);
+                float hardness = 1.0 - calcOpacity((float)std::pow(i * i + j * j, 0.5) * 2 , brush_hardness);
                 //std::cout << hardness << std::endl;
                 switch (mode)
                 {
                 case 1:
-                    canvas_rgba[index] = 255 * hardness * brush_opacity + canvas_rgba[index] * (1 - hardness * brush_opacity);
+                    if(use_explicit_h)
+                        canvas_rgba[index] = expl_height * hardness  + canvas_rgba[index] * (1 - hardness * brush_opacity);
+                    else
+                        canvas_rgba[index] = 255 * hardness * brush_opacity + canvas_rgba[index] * (1 - hardness * brush_opacity);
                     canvas_rgba[index + 1] = 0;
                     canvas_rgba[index + 2] = 255 - canvas_rgba[index];
                     break;
                 case 2:
-                    canvas_rgba[index + 2] = 255 * hardness * brush_opacity + canvas_rgba[index + 2] * (1 - hardness * brush_opacity);
+                    if (use_explicit_h)
+                        canvas_rgba[index + 2] = expl_height * hardness  + canvas_rgba[index + 2] * (1 - hardness * brush_opacity);
+                    else
+                        canvas_rgba[index + 2] = 255 * hardness * brush_opacity + canvas_rgba[index + 2] * (1 - hardness * brush_opacity);
                     canvas_rgba[index + 1] = 0;
                     canvas_rgba[index] = 255 - canvas_rgba[index + 2];
                     break;
@@ -1167,14 +1213,14 @@ void Painter::paintAssets(unsigned char*& canvas_rgba, unsigned int type, int ab
     }
 }
 
-Painter Painter::operator=(const Painter& p)
-{
-    this->brush_hardness = p.brush_hardness;
-    this->brush_size = p.brush_size;
-    this->explicit_height = p.explicit_height;
-    return Painter();
-
-}
+//Painter Painter::operator=(const Painter& p)
+//{
+//    this->brush_hardness = p.brush_hardness;
+//    this->brush_size = p.brush_size;
+//    this->explicit_height = p.explicit_height;
+//    return Painter();
+//
+//}
 AssetHandler::AssetHandler(bool custom,const char* texture_path) : asset(50, 50) {
     if (custom)
     {

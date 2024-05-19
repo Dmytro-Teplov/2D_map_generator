@@ -99,6 +99,7 @@ bool Archive::serialize(bool data)
     return true;
 }
 
+
 bool Archive::serialize(glm::vec4 data)
 {
     if (!output_file.is_open()) {
@@ -119,6 +120,43 @@ bool Archive::serialize(std::string data)
         return false;
     }
     output_file.write(reinterpret_cast<const char*>(&data), sizeof(std::string));
+    return true;
+}
+
+bool Archive::serialize(unsigned char* texture_rgba, const int len)
+{
+    if (!output_file.is_open()) {
+        std::cerr << "Error opening file for writing." << std::endl;
+        return false;
+    }
+
+    for (auto i = 0; i < len; i++)
+    {
+        int a = 0;
+        a = texture_rgba[i];
+        output_file.write(reinterpret_cast<const char*>(&a), sizeof(int));
+    }
+    return true;
+}
+
+bool Archive::serialize(FrameBuffer fb)
+{
+    int len = fb.getTextureLen();
+    unsigned char* imageData = (unsigned char*)malloc(len);
+    glBindTexture(GL_TEXTURE_2D, fb.getResultTexture());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    if (!output_file.is_open()) {
+        std::cerr << "Error opening file for writing." << std::endl;
+        return false;
+    }
+
+    for (auto i = 0; i < len; i++)
+    {
+        int a = 0;
+        a = imageData[i];
+        output_file.write(reinterpret_cast<const char*>(&a), sizeof(int));
+    }
     return true;
 }
 
@@ -177,35 +215,11 @@ bool Archive::deserialize(std::string& data)
     return true;
 }
 
-bool Archive::serialize(unsigned char* texture_rgba,const int len)
-{
-    //std::ofstream output_file(export_name, std::ios::binary);
-    if (!output_file.is_open()) {
-        std::cerr << "Error opening file for writing." << std::endl;
-        return false;
-    }
 
-
-    for (auto i = 0; i < len; i++)
-    {
-        int a = 0;
-        a = texture_rgba[i];
-        //std::cout << a<<" ";
-        output_file.write(reinterpret_cast<const char*>(&a), sizeof(int));
-    }
-    
-    //output_file.close();
-    return true;
-}
 
 bool Archive::deserialize(unsigned char*& texture_rgba,const int len)
 {
-
-    // Read the entire file content into a buffer
-    
     unsigned char* buffer = new unsigned char[len];
-    //std::ifstream input_file(export_name, std::ios::binary);
-    
     if (!input_file.is_open()) {
         std::cerr << "Error opening file: " << export_name << std::endl;
         return false;
@@ -214,13 +228,29 @@ bool Archive::deserialize(unsigned char*& texture_rgba,const int len)
     for (auto i = 0; i < len; i++)
     {
         int a = 0;
-
         input_file.read(reinterpret_cast<char*>(&a), sizeof(int));
-        //if (i < 100)
-        //    std::cout << a << "\n";
         texture_rgba[i] = (unsigned char)a;
     }
   
  
+    return true;
+}
+
+bool Archive::deserialize(FrameBuffer& fb, const int width, const int height)
+{
+    int len = width * height * 4;
+    unsigned char* buffer = new unsigned char[len];
+    if (!input_file.is_open()) {
+        std::cerr << "Error opening file: " << export_name << std::endl;
+        return false;
+    }
+
+    for (auto i = 0; i < len; i++)
+    {
+        int a = 0;
+        input_file.read(reinterpret_cast<char*>(&a), sizeof(int));
+        buffer[i] = (unsigned char)a;
+    }
+    fb.fill(buffer);
     return true;
 }
