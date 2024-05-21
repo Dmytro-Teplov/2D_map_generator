@@ -66,9 +66,9 @@ public:
 
     int batman_panel_width = 100;
     int robin_panel_width = 100;
-    int brush_size = 10;
+    int brush_size = 100;
     float brush_hardness = 0;
-    float brush_opacity = 0.3;
+    float brush_opacity = 0.2;
     int brush_height = 127;
 
     float density_1 = 0.1;
@@ -189,11 +189,11 @@ public:
     int steps_t = 3;
     int dot_aff_w = 50;
     int dot_aff_t = 50;
-    glm::vec4 terrain_c = glm::vec4(0.37, 0.62, 0.45, 1.0);
-    glm::vec4 terrain_secondary_c = glm::vec4(0.28, 0.54, 0.23,1.0);
-    glm::vec4 water_c = glm::vec4(0.03, 0.22, 0.49, 1.0);;
-    glm::vec4 water_secondary_c = glm::vec4(0.11, 0.52, 0.63, 1.0);
-    glm::vec4 outline_c = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    glm::vec4 terrain_c = glm::vec4(0.32, 0.46, 0.12, 1.0);
+    glm::vec4 terrain_secondary_c = glm::vec4(0.56, 0.8, 0.1,1.0);
+    glm::vec4 water_c = glm::vec4(0.11, 0.4, 0.6, 1.0);;
+    glm::vec4 water_secondary_c = glm::vec4(0.26, 0.75, 0.87, 1.0);
+    glm::vec4 outline_c = glm::vec4(0.85f, 0.7f, 0.46f, 1.0f);
     float outline_thickness = 1.0;
     float outline_hardness = 1.0;
     float dot_size_w = 0.01;
@@ -206,7 +206,7 @@ public:
     bool use_proc_texture_w = false;
     bool use_proc_texture_t = false;
     bool explicit_height = false;
-    bool use_foam = false;
+    bool use_foam = true;
 
 
     Canvas(int width, int height);
@@ -256,7 +256,7 @@ class Painter
 public:
     Quad& brush;
     FrameBuffer& fb;
-    int brush_size = 10;
+    int brush_size = 100;
     float brush_hardness = 0.5;
     float brush_opacity = 1.0;
     bool explicit_height = false;
