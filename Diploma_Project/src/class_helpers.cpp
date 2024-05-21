@@ -155,9 +155,9 @@ void Quad::initialize(bool use_texture)
 
     ib.initialize(indices, std::size(indices));
 
-    std::cout << glGetError();
+    //std::cout << glGetError();
     
-    std::cout << glGetError();
+    //std::cout << glGetError();
     
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * position_stride, (void*)0);
@@ -188,13 +188,13 @@ void Quad::initialize(bool use_texture)
 
         // Upload the image data to the texture object
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-        std::cout << width << " " << height << " " << channels << " " << glGetError();
+        //std::cout << width << " " << height << " " << channels << " " << glGetError();
 
         // Specify the texture parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glBindTexture(GL_TEXTURE_2D, 0);
-        std::cout << glGetError();
+        //std::cout << glGetError();
         //Unbind the texture object
         //glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -222,7 +222,7 @@ void Quad::changeSize(float canvas_ratio, bool w_ratio)
     {
         vertices[i] = ((vertices[i] > 0) - (vertices[i] < 0)) * width;
         vertices[i + 1] = ((vertices[i + 1] > 0) - (vertices[i + 1] < 0)) * height;
-        std::cout << vertices[i] << " " << vertices[i + 1] << std::endl;
+        //std::cout << vertices[i] << " " << vertices[i + 1] << std::endl;
     }
 }
 void Quad::setTexture(const char* texture_path_)
@@ -294,9 +294,9 @@ Quad Quad::operator=(const Quad& q)
 }
 void Quad::debug()
 {
-    std::cout << vertices[0] << " " << vertices[7] << std::endl;
+    /*std::cout << vertices[0] << " " << vertices[7] << std::endl;
     std::cout << indices[0] << " " << indices[5] << std::endl;
-    std::cout << texture_path;
+    std::cout << texture_path;*/
 }
 void Quad::draw()
 {
@@ -972,11 +972,11 @@ void Canvas::setSize(StateHandler& state, int width_, int height_)
         state.attachShader(shader);
         state.updMat(model, "model");
         state.attachShader(curr_shader);
-        std::cout << "equal";
+        //std::cout << "equal";
     }
     else
     {
-        std::cout << "else";
+        //std::cout << "else";
         state.updMat(model, "model");
     }
     
@@ -1256,8 +1256,8 @@ struct less_than_key
 
 void AssetHandler::genDistribution(Canvas& canvas, float radius)
 {
-    std::cout << "\n" << canvas.ssbb[0][0] << "\t" << canvas.ssbb[0][1] << std::endl;
-    std::cout << "\n" << canvas.ssbb[1][0] << "\t" << canvas.ssbb[1][1] << std::endl;
+    //std::cout << "\n" << canvas.ssbb[0][0] << "\t" << canvas.ssbb[0][1] << std::endl;
+    //std::cout << "\n" << canvas.ssbb[1][0] << "\t" << canvas.ssbb[1][1] << std::endl;
     /*auto kXMin = std::array<float, 2>{{canvas.ssbb[0][0], canvas.ssbb[0][1]}};
     auto kXMax = std::array<float, 2>{{canvas.ssbb[1][0], canvas.ssbb[1][1]}};*/
     auto kXMin = std::array<float, 2>{{-(float)canvas.width, -(float)canvas.height}};

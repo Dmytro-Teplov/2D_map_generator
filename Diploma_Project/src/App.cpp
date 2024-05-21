@@ -216,7 +216,7 @@ int main(void)
     unsigned int painter_shader = CreateShader(painter_source.vertexShader, painter_source.fragmentShader);
 
     std::filesystem::path currentPath = std::filesystem::current_path();
-    std::cout << "Current path is " << currentPath << std::endl;
+    //std::cout << "Current path is " << currentPath << std::endl;
     
     AssetHandler buildings(true, "res/assets/demo_assets.png");
     AssetHandler flora(true, "res/assets/demo_assets.png");
@@ -381,20 +381,20 @@ int main(void)
                 canvas.initialize(false);
                 canvas.createTexture(canvas_width, canvas_height);
                 
-                canvas.debug();
+                //canvas.debug();
                 canvas.setShader(terrain_shader);
 
                 frm_buffr.initialize(false);
                 frm_buffr.texture = canvas.fb_texture;
-                frm_buffr.debug();
+                //frm_buffr.debug();
                 frm_buffr.setShader(heightmap_shader);
 
                 brush.initialize(false);
-                brush.debug();
+                //brush.debug();
                 brush.setShader(cursor_shader);
 
                 ass.initialize(false);
-                ass.debug();
+                //ass.debug();
                 ass.setShader(asset_shader);
 
                 //SETTING UP TERRAIN SHADER
@@ -472,7 +472,7 @@ int main(void)
                     archive.stopDeserialization();
                     canvas.uploadFbTexture();
                     state.regenerate_assets = true;
-                    std::cout << "\n" << "AFTER\n";
+                    //std::cout << "\n" << "AFTER\n";
                     //state.load_from_bin = false;
                 }
 

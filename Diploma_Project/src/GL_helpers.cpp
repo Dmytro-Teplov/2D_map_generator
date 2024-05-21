@@ -207,11 +207,9 @@ FrameBuffer::FrameBuffer(int w_width_, int w_height_)
 
     glGenFramebuffers(1, &fb_ID);
     glBindFramebuffer(GL_FRAMEBUFFER, fb_ID);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "frame buffer is done\n";
-    else
-        std::cout << "error setting up frame buffer\n";
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_ID, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "error setting up frame buffer\n";
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
