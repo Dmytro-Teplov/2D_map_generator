@@ -469,11 +469,11 @@ void UiHandler::renderUI(StateHandler& state,Canvas& canvas, AssetHandler& asset
     {
 
     }
-    if (ImGui::Button("Save into PNG", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Export image", ImVec2(windowSize.x, 30)))
     {
         state.save = true;
     }
-    if (ImGui::Button("Save project state", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Save project", ImVec2(windowSize.x, 30)))
     {
         state.save_to_bin = true;
     }
@@ -786,7 +786,7 @@ void UiHandler::buildingsPanel(StateHandler& state, Canvas& canvas, AssetHandler
     middleLabel("Buildings Settings");
     ImGui::SliderFloat("Buildings size", &assets.asset_size, 0.f, 15.f);
     ImGui::SliderFloat("Buildings density", &state.density_1, 0.01f, 1.0f);
-    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Set new density!", ImVec2(windowSize.x, 30)))
     {
         assets.genDistribution(canvas, 1.0 / state.density_1);
         assets.regenerate_mpds = true;
@@ -813,12 +813,12 @@ void UiHandler::floraPanel(StateHandler& state, Canvas& canvas, AssetHandler& as
     }
 
     middleLabel("Flora Brush");
-    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderInt("Brush size", &state.brush_size, 0.f, 250.f);
     ImGui::Checkbox("Erase", &assets.erase_asset);
     middleLabel("Flora Settings");
-    ImGui::SliderFloat("Flora Size", &assets.asset_size, 0.f, 15.f);
+    ImGui::SliderFloat("Flora size", &assets.asset_size, 0.f, 15.f);
     ImGui::SliderFloat("Flora density", &state.density_2, 0.01f, 1.0f);
-    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Set new density!", ImVec2(windowSize.x, 30)))
     {
         assets.genDistribution(canvas, 1.0 / state.density_2);
         assets.regenerate_mpds = true;
@@ -846,12 +846,12 @@ void UiHandler::mountainsPanel(StateHandler& state, Canvas& canvas, AssetHandler
     }
 
     middleLabel("Mountains Brush");
-    ImGui::SliderInt("Brush Size", &state.brush_size, 0.f, 250.f);
+    ImGui::SliderInt("Brush size", &state.brush_size, 0.f, 250.f);
     ImGui::Checkbox("Erase", &assets.erase_asset);
     middleLabel("Mountains Settings");
-    ImGui::SliderFloat("Mountains Size", &assets.asset_size, 0.f, 15.f);
+    ImGui::SliderFloat("Mountains size", &assets.asset_size, 0.f, 15.f);
     ImGui::SliderFloat("Mountains density", &state.density_3, 0.01f, 1.0f);
-    if (ImGui::Button("Adjust density of current asset", ImVec2(windowSize.x, 30)))
+    if (ImGui::Button("Set new density!", ImVec2(windowSize.x, 30)))
     {
         assets.genDistribution(canvas, 1.0 / state.density_3);
         assets.regenerate_mpds = true;

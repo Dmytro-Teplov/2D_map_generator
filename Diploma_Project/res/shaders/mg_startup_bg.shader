@@ -53,5 +53,5 @@ void main()
 {   
     float brightness = getColorBasedOnDistance(texcoord);
     vec4 t = texture2D(bg_texture, texcoord);
-    color = t * brightness; 
+    color = t; 
 };

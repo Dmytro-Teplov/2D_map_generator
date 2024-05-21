@@ -3,6 +3,33 @@
 #include "class_helpers.h"
 #include "serialization.h"
 
+
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
+#include <unistd.h>
+#include <fcntl.h>
+#endif
+
+
+void hideConsole() 
+{
+#if defined(_WIN32) || defined(_WIN64)
+    HWND consoleWindow = GetConsoleWindow();
+    ShowWindow(consoleWindow, SW_HIDE);
+#elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
+    // This will redirect stdout to /dev/null
+    int devNull = open("/dev/null", O_WRONLY);
+    if (devNull != -1) 
+    {
+        dup2(devNull, STDOUT_FILENO);
+        close(devNull);
+    }
+#endif
+}
+
+
 std::string version = "1.0";
 std::string file_version = "1.0";
 
@@ -125,7 +152,6 @@ int main(void)
 {
     GLFWwindow* window;
 
-    /* Initialize the library */
     if (!glfwInit())
         return -1;
 
@@ -133,20 +159,27 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    /* C reate a windowed mode window and its OpenGL context */
     
+    GLFWimage icon;
+    icon.pixels = stbi_load("res/icons/icon.png", &icon.width, &icon.height, 0, 4);
+    if (icon.pixels == nullptr) {
+        std::cout << stbi_failure_reason();
+        stbi_image_free(icon.pixels);
+    }
+
     float canvas_aspect_ratio = 1.0;
-    int canvas_width = 1000, canvas_height = 500;
-    window = glfwCreateWindow(1280, 720, "Magic Maps", NULL, NULL);
-    glfwGetWindowSize(window, &w_width, &w_height);
+    int canvas_width = 1920, canvas_height = 1080;
     
+    window = glfwCreateWindow(1280, 720, "Magic Maps", NULL, NULL);
+
     if (!window)
     {
         glfwTerminate();
         return -1;
     }
 
-    /* Make the window's context current */
+    glfwGetWindowSize(window, &w_width, &w_height);
+
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     if (glewInit() != GLEW_OK)
@@ -154,15 +187,14 @@ int main(void)
     glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     //glDisablei(GL_BLEND, 0);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    //glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    //glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
     glBlendEquation(GL_FUNC_ADD);
-    //glBlendEquationSeparatei(0, GL_FUNC_ADD, GL_MAX); 
     glEnable(GL_BLEND);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_callback);
-
+    glfwSetWindowIcon(window, 1, &icon);
+    hideConsole();
+    
+    stbi_image_free(icon.pixels);
     ShaderProgramSource heightmap_sources, terrain_sources, cursor_sources, asset_sources, startup_bg_source, painter_source;
 
     heightmap_sources = ParseShader("res/shaders/mg_heightmap.shader");
@@ -265,7 +297,7 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
 
-        crntTime = glfwGetTime();
+        /*crntTime = glfwGetTime();
         timeDiff = crntTime - prevTime;
         counter++;
         if (timeDiff >= 1.0 / 30.0)
@@ -276,7 +308,7 @@ int main(void)
             glfwSetWindowTitle(window, newTit1e.c_str());
             prevTime = crntTime;
             counter = 0;
-        }
+        }*/
 
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_NewFrame();

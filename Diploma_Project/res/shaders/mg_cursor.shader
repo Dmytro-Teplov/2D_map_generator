@@ -50,7 +50,7 @@ void main()
 {   
     vec2 radius = (gl_FragCoord.xy - u_pos)*2.0;
     //radius.y = -radius.y;
-    if (length(radius) < u_circle_size && length(radius) > u_circle_size-3)
+    if (length(radius) < u_circle_size && length(radius) > u_circle_size - 3)
     {
         color = vec4(1.0);
     }

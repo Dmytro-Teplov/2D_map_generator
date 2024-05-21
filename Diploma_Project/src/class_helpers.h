@@ -67,13 +67,13 @@ public:
     int batman_panel_width = 100;
     int robin_panel_width = 100;
     int brush_size = 10;
-    float brush_hardness = 0.5;
-    float brush_opacity = 1.0;
+    float brush_hardness = 0;
+    float brush_opacity = 0.3;
     int brush_height = 127;
 
-    float density_1 = 0.01;
-    float density_2 = 0.01;
-    float density_3 = 0.01;
+    float density_1 = 0.1;
+    float density_2 = 0.1;
+    float density_3 = 0.1;
 
     int canvas_width = 1280;
     int canvas_height = 720;
@@ -185,22 +185,22 @@ public:
     int noise_compl = 6;
     float noise_1_scale = 4.0;
     float noise_2_scale = 1.0;
-    int steps_w = 1;
-    int steps_t = 1;
+    int steps_w = 3;
+    int steps_t = 3;
     int dot_aff_w = 50;
     int dot_aff_t = 50;
-    glm::vec4 terrain_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
-    glm::vec4 terrain_secondary_c = glm::vec4(0.84f, 0.76f, 0.67f,1.0f);
-    glm::vec4 water_c = glm::vec4(0.66f, 0.76f, 0.85f, 1.0f);
-    glm::vec4 water_secondary_c = glm::vec4(0.66f, 0.76f, 0.85f, 1.0f);
-    glm::vec4 outline_c = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    glm::vec4 terrain_c = glm::vec4(0.37, 0.62, 0.45, 1.0);
+    glm::vec4 terrain_secondary_c = glm::vec4(0.28, 0.54, 0.23,1.0);
+    glm::vec4 water_c = glm::vec4(0.03, 0.22, 0.49, 1.0);;
+    glm::vec4 water_secondary_c = glm::vec4(0.11, 0.52, 0.63, 1.0);
+    glm::vec4 outline_c = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     float outline_thickness = 1.0;
     float outline_hardness = 1.0;
     float dot_size_w = 0.01;
     float dot_size_t = 0.01;
-    bool use_outline = false;
-    bool use_secondary_tc = false;
-    bool use_secondary_wc = false;
+    bool use_outline = true;
+    bool use_secondary_tc = true;
+    bool use_secondary_wc = true;
     bool use_step_gradient_w = false;
     bool use_step_gradient_t = false;
     bool use_proc_texture_w = false;
@@ -233,11 +233,11 @@ public:
     unsigned int instanceID_VBO = 0;
     unsigned int bgTexture_ID = 0;
     Quad asset;
-    float asset_size = 1.0;
+    float asset_size = 2.0;
     bool regenerate_mpds = false;
     bool erase_asset = false;
     unsigned int asset_type = 0;
-    int amount = 2;
+    int amount = 4;
 
     //Quad* assets = new Quad[number_of_assets]();
     //AssetHandler();
